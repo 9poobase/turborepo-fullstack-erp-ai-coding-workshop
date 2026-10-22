@@ -73,7 +73,7 @@ docker compose exec api pnpm check                             # lint + typechec
 docker compose exec api pnpm add <pkg> --filter @erp/web       # add a dependency
 ```
 
-> Already have Node 24 + pnpm? You can run the same commands directly (`pnpm check`, `pnpm db:migrate ...`), and even run the apps on your machine with `docker compose up -d postgres && pnpm dev`. Don't run `pnpm dev` and `docker compose up` at the same time, because they use the same ports.
+> Already have Node 24 + pnpm? You can run the same commands directly (`pnpm check`, `pnpm db:migrate ...`), and even run the apps on your machine with `pnpm dev:local`. It starts only Postgres in Docker, applies migrations, then runs `pnpm dev`. Don't run it at the same time as `docker compose up`, because they use the same ports (`docker compose stop api web` first).
 
 ## 4. How the project is organised
 

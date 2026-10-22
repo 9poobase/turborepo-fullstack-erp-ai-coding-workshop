@@ -25,6 +25,7 @@ Run from the repo root. With Docker, prefix with `docker compose exec api` (e.g.
 | ------------------------------- | -------------------------------------------------------------- |
 | `docker compose up`             | Start postgres, api (http://localhost:3000/api), web (:5173)   |
 | `pnpm dev`                      | Same, without Docker for the apps (needs Postgres running)     |
+| `pnpm dev:local`                | Start Postgres in Docker, apply migrations, then `pnpm dev`    |
 | `pnpm check`                    | lint + typecheck + test + build everything (run before commit) |
 | `pnpm test` / `pnpm typecheck`  | Turbo runs it in every package                                 |
 | `pnpm db:migrate --name <name>` | Create + apply a migration after editing `schema.prisma`       |

@@ -3,7 +3,8 @@ import * as z from 'zod';
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
-  DATABASE_URL: z.url(),
+  // Same default as packages/database/prisma.config.ts: the compose Postgres published on localhost.
+  DATABASE_URL: z.url().default('postgresql://erp:erp@localhost:5432/erp'),
 });
 
 export type Env = z.infer<typeof envSchema>;

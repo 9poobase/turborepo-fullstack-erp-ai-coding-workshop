@@ -7,6 +7,8 @@
       "with": ["dev:generate"]
     },
     "dev:generate": {
+      // Start the watcher only after the one-shot generate finished: both write src/generated.
+      "dependsOn": ["db:generate"],
       "cache": false,
       "persistent": true
     }
