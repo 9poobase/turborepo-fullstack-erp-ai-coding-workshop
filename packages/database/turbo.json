@@ -1,0 +1,14 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    // While developing, regenerate the Prisma client whenever schema.prisma changes.
+    "dev": {
+      "with": ["dev:generate"]
+    },
+    "dev:generate": {
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

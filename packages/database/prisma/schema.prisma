@@ -1,0 +1,15 @@
+// Prisma schema: https://www.prisma.io/docs/orm/prisma-schema
+//
+// No models yet. We will design the ERP data model together in the workshop.
+// After adding/changing a model run:  pnpm db:migrate --name <describe-the-change>
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}

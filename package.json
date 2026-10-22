@@ -1,0 +1,29 @@
+{
+  "name": "erp-workshop",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.15.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "check": "turbo run lint typecheck test build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:generate": "pnpm --filter @erp/database db:generate",
+    "db:migrate": "pnpm --filter @erp/database db:migrate",
+    "db:deploy": "pnpm --filter @erp/database db:deploy",
+    "db:reset": "pnpm --filter @erp/database db:reset",
+    "db:seed": "pnpm --filter @erp/database db:seed",
+    "db:studio": "pnpm --filter @erp/database db:studio"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.10",
+    "turbo": "^2.11.10"
+  }
+}
