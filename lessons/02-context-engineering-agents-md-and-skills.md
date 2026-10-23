@@ -114,6 +114,10 @@ When you are unsure where a paragraph belongs, ask three questions in order:
 | Is it only needed for one kind of task (a workflow, a template, a command recipe)? | yes    | a skill       |
 | Can the agent get it from the code, the config, or the tooling anyway?             | yes    | delete it     |
 
+![Decision flow with three questions in order. Would the agent make a mistake on an ordinary task without this? Yes: AGENTS.md, always loaded. Is it only needed for one kind of task? Yes: a skill, loaded on demand. Can the agent get it from the code, the config or the tooling anyway? Yes: delete it. If every answer is no, it is background for humans and belongs in README.md.](images/sorting-rule.svg)
+
+Stop at the first "yes". If every answer is "no", the paragraph is background rather than guidance: keep it in `README.md` for humans and out of the agent's window.
+
 The third question is the one people skip. A Prettier config already exists in the repo and `pnpm format` applies it, so a paragraph describing the quote style is pure cost. A list of the libraries in `package.json` is pure cost. A rule repeated in the root file and in an app file is paid twice.
 
 ---
