@@ -1,52 +1,34 @@
 # AGENTS.md
 
-Guidance for AI coding agents (Claude Code, Cursor, Kiro, Codex, ...) working in this repository.
-Humans: see [README.md](README.md).
+Rules for AI coding agents working in this repository. Humans: see [README.md](README.md).
 
 ## What this is
 
-A teaching monorepo for a full-stack ERP built during an on-site workshop.
-Turborepo + pnpm workspaces, everything runs in Docker for local development.
+A teaching monorepo for a full-stack ERP (Turborepo + pnpm workspaces, runs in Docker).
 
-| Path                         | Package                  | What                                                                |
-| ---------------------------- | ------------------------ | ------------------------------------------------------------------- |
-| `apps/web`                   | `@erp/web`               | Vite + React 19, React Router, TanStack Query, Tailwind v4, shadcn  |
-| `apps/api`                   | `@erp/api`               | NestJS 12 (native ESM), oRPC contract implementation, Prisma access |
-| `packages/contracts`         | `@erp/contracts`         | API contract: oRPC routes + Zod schemas. Single source of truth     |
-| `packages/database`          | `@erp/database`          | Prisma 7 schema, migrations, seed, generated client                 |
-| `packages/typescript-config` | `@erp/typescript-config` | Shared `tsconfig` bases                                             |
-| `packages/eslint-config`     | `@erp/eslint-config`     | Shared ESLint flat configs                                          |
+| Path                 | Package          | What                                                               |
+| -------------------- | ---------------- | ------------------------------------------------------------------ |
+| `apps/web`           | `@erp/web`       | Vite + React 19, React Router, TanStack Query, Tailwind v4, shadcn |
+| `apps/api`           | `@erp/api`       | NestJS 12 (native ESM), implements the oRPC contract, Prisma       |
+| `packages/contracts` | `@erp/contracts` | oRPC routes + Zod schemas. Single source of truth for the API      |
+| `packages/database`  | `@erp/database`  | Prisma 7 schema, migrations, seed, generated client                |
 
-This file holds the rules for the whole repo. Each app adds its own stack-specific rules:
+`packages/typescript-config` and `packages/eslint-config` hold shared configs.
 
-- [`apps/api/AGENTS.md`](apps/api/AGENTS.md): NestJS, oRPC handlers, Prisma access, api tests
-- [`apps/web/AGENTS.md`](apps/web/AGENTS.md): React, data fetching, UI components, web tests
+Each app has its own rules: [`apps/api/AGENTS.md`](apps/api/AGENTS.md), [`apps/web/AGENTS.md`](apps/web/AGENTS.md). Read the file for every app you touch.
 
-Read the file for every app you touch. A feature usually touches both.
+## Rules
 
-## Adding a feature (contract-first workflow)
+- **Contract-first.** The API shape lives in `packages/contracts`. The api implements it, the web calls it through the typed client, and both derive types with `z.infer`. Never hand-write request/response types or validation in the apps.
+- **ESM everywhere.** Relative imports in `apps/api` and `packages/*` need the `.js` extension. `apps/web` uses the `@/` alias for `src/` with no extension.
+- **Env vars** are validated in `apps/api/src/config/env.ts`. New ones also go into `.env.example`.
+- **Shared packages** are built to `dist/`; apps import the built output.
+- **Before finishing:** `pnpm check` (lint, typecheck, test, build) and `pnpm format`, from the repo root.
 
-1. **Data model**: add/modify models in `packages/database/prisma/schema.prisma`, then `pnpm db:migrate --name <change>`.
-2. **Contract**: add Zod schemas + oRPC routes in `packages/contracts/src/<feature>.ts`, export from `src/index.ts`, and register them in the `contract` object.
-3. **API**: create a Nest module in `apps/api/src/<feature>/`. Implement every route with `@Implement(contract.<feature>.<route>)` + `implement(...).handler(...)`. See `apps/api/src/health/health.controller.ts`. Register the module in `app.module.ts`.
-4. **Web**: call it with `useQuery(orpc.<feature>.<route>.queryOptions({ input }))` / `useMutation(orpc.<feature>.<route>.mutationOptions())`. See `apps/web/src/components/health-status.tsx`.
-5. **Tests**: colocate `*.spec.ts` (api, use `call()` from `@orpc/server`) and `*.test.ts(x)` (web/packages, Vitest).
-6. Run `pnpm check`.
+## Skills
 
-Never hand-write request/response types in the apps. Derive them from `@erp/contracts` (`z.infer`), so a contract change breaks the build on both sides.
+Load the matching skill instead of guessing the details:
 
-## Conventions
-
-- **ESM everywhere.** In `apps/api` and `packages/*`, relative imports need the `.js` extension (`import { x } from './x.js'`). `apps/web` uses the `@/` alias for `src/` with no extension.
-- **Validation lives in the contract** (Zod), not in the apps.
-- **Env vars** are validated in `apps/api/src/config/env.ts`. Add new ones there and to `.env.example`. If a turbo task needs one, add it to `globalPassThroughEnv` in `turbo.json`.
-- **Formatting**: Prettier (single quotes, trailing commas, width 100). `pnpm format`.
-- Shared packages are built with tsup into `dist/`. The apps import the built output. `turbo dev` keeps them rebuilt in watch mode.
-
-## Gotchas
-
-- Scripts are defined in the root `package.json`. Run them from the repo root. When the stack runs in Docker (`pnpm docker:up`), run them inside the api container: `docker compose exec api pnpm db:migrate --name add_customer`.
-- To run a task in one package only, use `--filter`: `pnpm turbo run test --filter=@erp/api`.
-- `node_modules` is shared between the host and the containers (bind mount). After adding a dependency, run `pnpm install` in only one place.
-- Prisma 7: the client is generated into `packages/database/src/generated` (gitignored) and connects through the `@prisma/adapter-pg` driver adapter. `migrate dev` does not run `generate`. `turbo` and `pnpm dev` handle generation for you.
-- The API's global prefix is `/api`, and contract paths are relative to it (`/health` → `/api/health`).
+- `add-feature`: end-to-end recipe with templates (Prisma model → contract → Nest module → React → tests).
+- `write-tests`: how api specs, web component tests, and contract schema tests are written and run.
+- `repo-commands`: Docker vs host, db migrations/seed/reset, `--filter`, dependencies, Prisma and `node_modules` gotchas.

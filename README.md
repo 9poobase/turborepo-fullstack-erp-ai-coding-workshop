@@ -99,7 +99,7 @@ turbo.json                      task pipeline (build → dev/test/lint/typecheck
 
 Change the contract and TypeScript immediately shows you what to fix on both sides.
 
-See [AGENTS.md](AGENTS.md) for the step-by-step "add a feature" workflow and conventions, and `apps/api/AGENTS.md` / `apps/web/AGENTS.md` for the rules specific to each app. (Your AI assistant reads them too.)
+See [AGENTS.md](AGENTS.md) for the repo conventions and `apps/api/AGENTS.md` / `apps/web/AGENTS.md` for the rules specific to each app. The step-by-step "add a feature" workflow, test recipes and command cheat-sheet live as skills in `.agents/skills/`. (Your AI assistant reads all of them too.)
 
 ## 5. Troubleshooting
 
