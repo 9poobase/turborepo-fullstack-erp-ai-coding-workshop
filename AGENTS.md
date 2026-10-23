@@ -17,23 +17,12 @@ Turborepo + pnpm workspaces, everything runs in Docker for local development.
 | `packages/typescript-config` | `@erp/typescript-config` | Shared `tsconfig` bases                                             |
 | `packages/eslint-config`     | `@erp/eslint-config`     | Shared ESLint flat configs                                          |
 
-## Commands
+This file holds the rules for the whole repo. Each app adds its own stack-specific rules:
 
-Run from the repo root. With Docker, prefix with `docker compose exec api` (e.g. `docker compose exec api pnpm db:migrate --name add_customer`).
+- [`apps/api/AGENTS.md`](apps/api/AGENTS.md): NestJS, oRPC handlers, Prisma access, api tests
+- [`apps/web/AGENTS.md`](apps/web/AGENTS.md): React, data fetching, UI components, web tests
 
-| Command                         | What                                                           |
-| ------------------------------- | -------------------------------------------------------------- |
-| `docker compose up`             | Start postgres, api (http://localhost:3000/api), web (:5173)   |
-| `pnpm dev`                      | Same, without Docker for the apps (needs Postgres running)     |
-| `pnpm dev:local`                | Start Postgres in Docker, apply migrations, then `pnpm dev`    |
-| `pnpm check`                    | lint + typecheck + test + build everything (run before commit) |
-| `pnpm test` / `pnpm typecheck`  | Turbo runs it in every package                                 |
-| `pnpm db:migrate --name <name>` | Create + apply a migration after editing `schema.prisma`       |
-| `pnpm db:generate`              | Regenerate the Prisma client                                   |
-| `pnpm db:seed`                  | Run `packages/database/prisma/seed.ts`                         |
-| `pnpm db:reset`                 | Drop the DB, re-apply all migrations, seed                     |
-
-Filter to one package: `pnpm turbo run test --filter=@erp/api`.
+Read the file for every app you touch. A feature usually touches both.
 
 ## Adding a feature (contract-first workflow)
 
@@ -49,15 +38,15 @@ Never hand-write request/response types in the apps. Derive them from `@erp/cont
 ## Conventions
 
 - **ESM everywhere.** In `apps/api` and `packages/*`, relative imports need the `.js` extension (`import { x } from './x.js'`). `apps/web` uses the `@/` alias for `src/` with no extension.
-- **Validation lives in the contract** (Zod). Don't add `class-validator` DTOs in Nest.
-- **Database access** goes through `PrismaService` (`apps/api/src/database`), which is injected via DI. Don't create `PrismaClient` instances in the api.
+- **Validation lives in the contract** (Zod), not in the apps.
 - **Env vars** are validated in `apps/api/src/config/env.ts`. Add new ones there and to `.env.example`. If a turbo task needs one, add it to `globalPassThroughEnv` in `turbo.json`.
-- **UI components**: shadcn/ui lives in `apps/web/src/components/ui`. Add more with `pnpm dlx shadcn@latest add <component>` from `apps/web`. Don't hand-edit unless necessary.
 - **Formatting**: Prettier (single quotes, trailing commas, width 100). `pnpm format`.
 - Shared packages are built with tsup into `dist/`. The apps import the built output. `turbo dev` keeps them rebuilt in watch mode.
 
 ## Gotchas
 
+- Scripts are defined in the root `package.json`. Run them from the repo root. When the stack runs in Docker (`pnpm docker:up`), run them inside the api container: `docker compose exec api pnpm db:migrate --name add_customer`.
+- To run a task in one package only, use `--filter`: `pnpm turbo run test --filter=@erp/api`.
 - `node_modules` is shared between the host and the containers (bind mount). After adding a dependency, run `pnpm install` in only one place.
 - Prisma 7: the client is generated into `packages/database/src/generated` (gitignored) and connects through the `@prisma/adapter-pg` driver adapter. `migrate dev` does not run `generate`. `turbo` and `pnpm dev` handle generation for you.
 - The API's global prefix is `/api`, and contract paths are relative to it (`/health` → `/api/health`).

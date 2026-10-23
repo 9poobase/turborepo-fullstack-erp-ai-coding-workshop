@@ -11,6 +11,8 @@ The starter repository for the on-site **AI-assisted coding workshop**. We will 
 
 No ERP features yet. This is the clean starting point.
 
+The lessons that go with the workshop are in [`lessons/`](lessons/README.md). Start with [Lesson 1: Monorepos, Turborepo, and AI coding](lessons/01-monorepo-and-turborepo.md).
+
 ---
 
 ## 1. Before the workshop (please do this at home)
@@ -97,7 +99,7 @@ turbo.json                      task pipeline (build → dev/test/lint/typecheck
 
 Change the contract and TypeScript immediately shows you what to fix on both sides.
 
-See [AGENTS.md](AGENTS.md) for the step-by-step "add a feature" workflow and conventions. (Your AI assistant reads it too.)
+See [AGENTS.md](AGENTS.md) for the step-by-step "add a feature" workflow and conventions, and `apps/api/AGENTS.md` / `apps/web/AGENTS.md` for the rules specific to each app. (Your AI assistant reads them too.)
 
 ## 5. Troubleshooting
 
