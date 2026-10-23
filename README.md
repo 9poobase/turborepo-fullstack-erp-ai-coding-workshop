@@ -9,7 +9,7 @@ The starter repository for the on-site **AI-assisted coding workshop**. We will 
 - **Monorepo**: [Turborepo](https://turborepo.dev) + [pnpm](https://pnpm.io) workspaces
 - **Dev environment**: Docker Compose. **You only need Docker installed.**
 
-No ERP features yet. This is the clean starting point.
+No ERP features yet. This is the clean starting point. Sign-in is already built in, so the workshop can go straight to the ERP.
 
 The lessons that go with the workshop are in [`lessons/`](lessons/README.md). Start with [Lesson 1: Monorepos, Turborepo, and AI coding](lessons/01-monorepo-and-turborepo.md), then [Lesson 2: Context engineering: AGENTS.md and skills](lessons/02-context-engineering-agents-md-and-skills.md) and [Lesson 3: Start clean: reset your agent, lock the project settings, switch off memory](lessons/03-clean-agent-setup.md).
 
@@ -51,11 +51,26 @@ The first start takes a few minutes. When the logs settle:
 | API docs (Swagger)   | http://localhost:3000/api/docs      |
 | Postgres (for tools) | `localhost:5432` user/pass/db `erp` |
 
-The web page shows a **System status** card. **API ✅ / Database ✅** means the full chain works: React → typed client → Vite proxy → NestJS → Prisma → Postgres.
+Sign in with one of the demo accounts (they are also listed on the login page):
+
+| Email             | Password   | Role    |
+| ----------------- | ---------- | ------- |
+| `admin@erp.local` | `password` | `ADMIN` |
+| `staff@erp.local` | `password` | `STAFF` |
+
+The home page then shows a **System status** card. **API ✅ / Database ✅** means the full chain works: React → typed client → Vite proxy → NestJS → Prisma → Postgres.
 
 Edit any file and it reloads automatically: React (HMR), NestJS (restart), and the shared packages (rebuild).
 
 Stop with `Ctrl+C`, or `docker compose down`. Add `-v` to also delete the database.
+
+### Signing in
+
+Auth is deliberately minimal and only meant for the workshop. There is no sign-up or password reset: users come from `packages/database/prisma/seed.ts`, which runs every time the api starts.
+
+- `POST /api/auth/login` checks the password and sets an httpOnly cookie holding the user id, signed with `AUTH_SECRET` and valid for 7 days. `auth.logout` clears it, and `auth.me` returns the current user.
+- Every API route requires a signed-in user unless it is marked `@Public()`. `@Roles('ADMIN')` limits a route to certain roles (`apps/api/src/auth`).
+- In the web app, every page under `RequireAuth` redirects to `/login` when nobody is signed in or any request returns 401 (`apps/web/src/lib/auth.ts`).
 
 ### Browse the database
 
@@ -109,6 +124,7 @@ See [AGENTS.md](AGENTS.md) for the repo conventions and `apps/api/AGENTS.md` / `
 | Changes are not picked up                | Windows: make sure the repo is inside WSL, not under `/mnt/c`. Then `docker compose restart api web`.             |
 | Editor shows red squiggles everywhere    | `node_modules` is missing: `docker compose run --rm install`, then restart the TS server in your editor.          |
 | Weird dependency errors after `git pull` | `docker compose run --rm install`                                                                                 |
+| Can't sign in with the demo accounts     | Re-create them: `docker compose exec api pnpm db:seed`                                                            |
 | Start completely fresh                   | `docker compose down -v`, delete `node_modules`, then `docker compose up`                                         |
 
 ## Optional: Dev Container

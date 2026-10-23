@@ -2,6 +2,7 @@ import { Controller, Get, Header } from '@nestjs/common';
 import { contract } from '@erp/contracts';
 import { OpenAPIGenerator } from '@orpc/openapi';
 import { ZodToJsonSchemaConverter } from '@orpc/zod/zod4';
+import { Public } from '../auth/auth.decorators.js';
 
 const generator = new OpenAPIGenerator({
   schemaConverters: [new ZodToJsonSchemaConverter()],
@@ -9,6 +10,7 @@ const generator = new OpenAPIGenerator({
 
 /** OpenAPI spec generated from the shared contract, plus a Swagger UI to explore it. */
 @Controller()
+@Public()
 export class OpenApiController {
   @Get('openapi.json')
   spec() {

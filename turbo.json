@@ -7,6 +7,7 @@
     "PORT",
     "HOST",
     "DATABASE_URL",
+    "AUTH_SECRET",
     "API_PROXY_TARGET",
     "WATCH_POLLING",
     "CHOKIDAR_USEPOLLING",

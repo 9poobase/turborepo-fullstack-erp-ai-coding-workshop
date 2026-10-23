@@ -50,8 +50,8 @@ services:
 
   api:
     <<: *node-app
-    # Apply pending migrations, then run NestJS + watchers for the shared packages it uses.
-    command: sh -c "pnpm db:deploy && pnpm turbo run dev --filter=@erp/api... --ui=stream"
+    # Apply pending migrations, (re)create the demo users, then run NestJS + watchers for the shared packages it uses.
+    command: sh -c "pnpm db:deploy && pnpm db:seed && pnpm turbo run dev --filter=@erp/api... --ui=stream"
     ports:
       - '${API_PORT:-3000}:3000'
     environment:

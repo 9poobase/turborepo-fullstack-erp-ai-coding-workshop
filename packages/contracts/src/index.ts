@@ -1,5 +1,7 @@
+import { authContract } from './auth.js';
 import { healthContract } from './health.js';
 
+export * from './auth.js';
 export * from './health.js';
 
 /**
@@ -10,6 +12,7 @@ export * from './health.js';
  * Add new feature contracts here, e.g. `customers: customersContract`.
  */
 export const contract = {
+  auth: authContract,
   health: healthContract,
 };
 
