@@ -55,6 +55,7 @@ describe('CustomersController', () => {
 ```
 
 - `call()` runs the contract's input/output validation, so invalid input rejects just like a real request.
+- `AuthGuard` doesn't run in controller specs. Pass the user straight into the method: `call(controller.create(user), input)` with `const user: User = { id: 'u1', email: 'admin@erp.local', name: 'Admin', role: 'ADMIN' }`. Guard behaviour (`@Public`, `@Roles`) is covered in `src/auth/auth.guard.spec.ts`.
 - Stub only the Prisma methods the handler uses. Don't hit a real database.
 
 ## Web component test
@@ -91,7 +92,8 @@ describe('CustomerList', () => {
 
 - Use `findBy*` (async) for anything that appears after the query resolves.
 - jsdom and `@testing-library/jest-dom` matchers are set up in `apps/web/src/test/setup.ts`.
-- For several endpoints, switch on `request.url` / `request.method` inside the fetch stub.
+- For several endpoints use `mockApi` from `@/test/mock-api`: `mockApi({ 'GET /customers': [...], 'POST /customers': unauthorized() })`. Keys are `'<METHOD> <path without /api>'`; unmocked routes answer 404.
+- Components that read the user (`useCurrentUser`) need `'GET /auth/me': { user }` in the mock. For pages with links or redirects, render through `createMemoryRouter` + `RouterProvider`. References: `apps/web/src/routes/login.test.tsx`, `apps/web/src/components/require-auth.test.tsx`.
 
 ## Contract schema test
 
