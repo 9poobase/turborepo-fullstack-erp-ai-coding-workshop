@@ -29,7 +29,7 @@ The skills in this lesson take those three problems in order: an interview that 
 
 The three skills are from Matt Pocock's [skills collection](https://github.com/mattpocock/skills). The `grill-me` skill has been in this repository since lesson 2. The other two, and the setup skill they depend on, you install in section 3.
 
-One rule for the whole session: **all three steps run in one conversation**. The spec step synthesises what the grill produced, and the ticket step reads the spec from the same window. Don't `/clear` between them.
+One rule for the whole session: **all three steps run in one conversation**. The spec step synthesises what the grill produced, and the ticket step works best with the grill still in view. Don't `/clear` between them. The one exception is `/compact`, and section 6 says when it is safe.
 
 ---
 
@@ -180,6 +180,16 @@ gh issue view <number>                     # read it
 
 Read it properly. A good spec has user stories that cover every role in the TOR, implementation decisions you recognise from the grill, and an "Out of Scope" section that lists what the TOR excludes plus what the class deferred. If a decision is wrong or missing, say so in the chat and have the agent `gh issue edit` the body. Don't move on with a spec you wouldn't sign.
 
+### If the window is filling up
+
+By now the agent has read the TOR, explored the codebase, and run several rounds of questions. Check how much of the window that cost:
+
+```
+/context show
+```
+
+Lesson 2's smart zone rule applies: past roughly half the window, the agent gets worse at exactly the judgement the ticket step needs. **This is the one safe moment to compact.** The spec is on GitHub, so nothing you still need lives only in the conversation, and `/to-tickets #<spec number>` fetches the issue regardless. Run `/compact` here and carry on. Don't compact during the grill or between the grill and the spec: `/to-spec` writes the spec from the conversation, and a summary of a hundred decisions is not the same as the decisions.
+
 ---
 
 ## 7. Step 3: tickets
@@ -191,6 +201,8 @@ Read it properly. A good spec has user stories that cover every role in the TOR,
 The skill reads the spec issue, explores the codebase again, and drafts tickets. Before it publishes anything, it shows you a numbered list, each with a title, what it delivers, and **blocked by**: the tickets that must close first. Then it asks whether the granularity is right, whether the edges are real, and what to merge or split. This is the step where you earn your keep.
 
 ### What a good ticket looks like
+
+![Two issue cards side by side. Left, marked not a ticket: Products, Prisma model and migration. Only the schema layer is filled in the strip above it, its criteria Migration runs and Products page loads are flagged as passing today, and it has no Covers line and no TOR IDs. Right, marked a ticket: number 15, create and edit a product with SKU uniqueness enforced, parent number 12, covers MD-01 and MD-02, labelled ready-for-agent, every layer filled, criteria that fail against today's code and cite TOR IDs, blocked by number 14 stores and suppliers. Below, three checks: vertical, traceable, each criterion can fail today.](images/good-ticket.svg)
 
 Every ticket is a **tracer bullet**: a narrow but complete path through schema, API, UI and tests, demoable on its own, sized for one fresh context window. Three checks for each one:
 
@@ -254,6 +266,7 @@ The issues themselves live on GitHub and need no commit. Don't commit `.scratch/
 - **Grill** turns the document into decisions, out loud, in rounds. Facts are the agent's job; decisions are yours; nothing is written.
 - **Spec** turns the conversation into one document the agent can build from, published as a GitHub issue because that is the tracker this repo configured.
 - **Tickets** turns the spec into 15 to 25 vertical slices, each with the TOR requirements it covers and the tickets that block it, as sub-issues you approved before they were published.
+- **One conversation**, and one safe place to `/compact`: after the spec is on GitHub, never before.
 - All of it is **installed into the repository** and committed, so the next lesson starts from the same place on every laptop.
 
 ---
@@ -302,6 +315,7 @@ The skills are the same files; only the install target and the way you invoke th
 | Install | `npx skills@latest add mattpocock/skills`, pick Kiro CLI. Copies land in `.kiro/skills/`. | Same command, pick Claude Code. Files land in `.agents/skills/` with a symlink from `.claude/skills/`, as in lesson 2. | Same command, pick Codex. Files land in `.agents/skills/`, which Codex reads directly. |
 | Invoke  | `/to-spec`                                                                                | `/to-spec`                                                                                                             | `$to-spec`, or "use the to-spec skill" in plain words                                  |
 | Verify  | `/context show`                                                                           | `/context`                                                                                                             | Type `$` and check the skill is in the list                                            |
+| Window  | `/context show` to check usage, `/compact` after the spec is published                    | `/context` and `/compact`                                                                                              | `/status` and `/compact`                                                               |
 | Commit  | `.kiro/skills` and `skills-lock.json`                                                     | `.agents/skills`, `.claude/skills` and `skills-lock.json`                                                              | `.agents/skills` and `skills-lock.json`                                                |
 
 ---
