@@ -11,7 +11,7 @@ The starter repository for the on-site **AI-assisted coding workshop**. We will 
 
 No ERP features yet. This is the clean starting point. Sign-in is already built in, so the workshop can go straight to the ERP.
 
-The lessons that go with the workshop are in [`lessons/`](lessons/README.md). Start with [Lesson 1: Monorepos, Turborepo, and AI coding](lessons/01-monorepo-and-turborepo.md), then [Lesson 2: Context engineering: AGENTS.md and skills](lessons/02-context-engineering-agents-md-and-skills.md) and [Lesson 3: Start clean: reset your agent, lock the project settings, switch off memory](lessons/03-clean-agent-setup.md).
+The lessons that go with the workshop are in [`lessons/`](lessons/README.md). Start with [Lesson 1: Monorepos, Turborepo, and AI coding](lessons/01-monorepo-and-turborepo.md), then [Lesson 2: Context engineering: AGENTS.md and skills](lessons/02-context-engineering-agents-md-and-skills.md) [Lesson 3: Start clean: reset your agent, lock the project settings, switch off memory](lessons/03-clean-agent-setup.md), and [Lesson 4: From a TOR to tickets: grill, spec, tickets](lessons/04-from-tor-to-tickets.md).
 
 ---
 
@@ -23,11 +23,12 @@ Venue Wi-Fi is shared by everyone, so download the heavy stuff beforehand.
    - [Docker Desktop](https://www.docker.com/products/docker-desktop/) (or Docker Engine + Compose on Linux)
    - [Git](https://git-scm.com/)
    - An editor: [VS Code](https://code.visualstudio.com/), Cursor, Kiro, WebStorm, ...
+   - [GitHub CLI](https://cli.github.com/) (`gh`), signed in with `gh auth login`. Lesson 4 uses it to fork the repo and publish issues.
 2. **Windows only:** install [WSL 2](https://learn.microsoft.com/windows/wsl/install) and clone the repo **inside the WSL filesystem** (e.g. `~/code`, not `C:\...` / `/mnt/c/...`). File watching and performance are much better there.
-3. Clone and pre-download everything:
+3. Fork this repository on GitHub, then clone **your fork** and pre-download everything. Lesson 4 publishes GitHub issues into your fork. (Already cloned the original? Lesson 4 shows how to fork afterwards.)
 
    ```bash
-   git clone <repo-url> erp-workshop
+   git clone <your-fork-url> erp-workshop
    cd erp-workshop
    docker compose build             # dev image (Node 24 + pnpm)
    docker compose pull postgres     # database image
