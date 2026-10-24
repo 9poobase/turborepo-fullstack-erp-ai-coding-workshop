@@ -132,6 +132,14 @@ One more thing the setup doesn't do. Both skills apply a label called `ready-for
 gh label create ready-for-agent --description "An agent can pick this up" --color 0E8A16
 ```
 
+Before you go on, check that the install and the setup both left files behind:
+
+```bash
+git status --short      # expect: .kiro/skills/ (six new folders), skills-lock.json, docs/agents/, AGENTS.md
+```
+
+All of it is untracked at this point. Section 8 commits it. If that commit is skipped, the next lesson's `/implement #n` opens in a repository with no tracker configuration and no `implement` skill, and the first ten minutes go to redoing this section.
+
 ---
 
 ## 5. Step 1: grill
@@ -178,7 +186,14 @@ gh issue list --label ready-for-agent      # the spec should be the only issue s
 gh issue view <number>                     # read it
 ```
 
-Read it properly. A good spec has user stories that cover every role in the TOR, implementation decisions you recognise from the grill, and an "Out of Scope" section that lists what the TOR excludes plus what the class deferred. If a decision is wrong or missing, say so in the chat and have the agent `gh issue edit` the body. Don't move on with a spec you wouldn't sign.
+Read it properly. A good spec has user stories that cover every role in the TOR, implementation decisions you recognise from the grill, and an "Out of Scope" section that lists what the TOR excludes plus what the class deferred. Four things to check line by line, because the tickets inherit every one of them:
+
+- **Every row of [Appendix A](#appendix-a-the-decisions-we-made-in-class) is answered somewhere.** Not necessarily the same way the class answered it, but answered, once. A spec that chose Thai screens or a strict reading of Q-02 is fine if the room chose that; a spec that chose it because nobody noticed is not.
+- **It answers each question only once.** The skill writes the "Solution" and "Implementation Decisions" sections separately, and they can disagree. The common one: "Solution" says the section 10 questions stay out, and "Implementation Decisions" builds them to their defaults. The ticket step reads both and picks whichever it saw last.
+- **Testing Decisions names the four seams** from the list above, and says plainly that the integration seam **does not exist yet**. If the spec reads as though Postgres tests are already a thing in this repo, the first stock ticket will stub the database and the locking rules are never proven.
+- **Cross-cutting rules are decisions, not features.** Pagination, list states, error format, audit records, idempotency keys and document numbering belong in "Implementation Decisions" as rules every ticket follows. If they appear as a deliverable of their own, the ticket step will make a "shared conventions" ticket out of them, which is the horizontal slice section 7 warns about.
+
+If a decision is wrong or missing, say so in the chat and have the agent `gh issue edit` the body. Don't move on with a spec you wouldn't sign.
 
 ### If the window is filling up
 
@@ -194,11 +209,49 @@ Lesson 2's smart zone rule applies: past roughly half the window, the agent gets
 
 ## 7. Step 3: tickets
 
+The skill's own issue template is three sections: parent, what to build, acceptance criteria. It says nothing about traceability, test seams, or whether a criterion can fail, and left alone it produces tickets without any of that. So the invocation carries the ticket shape we want. Paste the whole block, with your spec number:
+
 ```
 /to-tickets #<spec number>
+
+Ticket shape for this repository, on top of your usual template:
+- Aim for 15 to 25 tickets. Each is one vertical slice through schema, contract, API, UI and tests, demoable on its own, sized for one fresh context window.
+- Under "What to build", add three lines. `Covers:` the TOR requirement IDs this ticket implements. `Demo:` what I can show when it is done. `Seams:` which of the four test seams in the spec this ticket uses.
+- Every acceptance criterion fails against today's code, is observable at one of those seams, and cites the TOR's AC-xx scenario where one exists. Put each of AC-01 to AC-08 on the functional ticket that implements it, never in a separate acceptance ticket.
+- No cross-cutting tickets. Pagination, list states, error format, audit records, idempotency keys and document numbering land in the first ticket that needs them, and every later ticket that uses them is blocked by that ticket.
+- The first ticket that writes stock sets up the Postgres integration test harness as one of its criteria.
+- The last ticket is the NFR-05 load test, blocked by everything.
+Show me the numbered list before publishing anything.
 ```
 
 The skill reads the spec issue, explores the codebase again, and drafts tickets. Before it publishes anything, it shows you a numbered list, each with a title, what it delivers, and **blocked by**: the tickets that must close first. Then it asks whether the granularity is right, whether the edges are real, and what to merge or split. This is the step where you earn your keep.
+
+### The shape of one ticket
+
+This is what each published issue should look like. Keep it beside you during the quiz step.
+
+```markdown
+## Parent
+
+Part of #12 (Retail ERP first release).
+
+## What to build
+
+An administrator creates and edits a product. A second product with an SKU
+that already exists is rejected with a message naming the SKU.
+
+Covers: MD-01, MD-02
+Demo: create SKU001 on the products page, try to create it again, see the rejection
+Seams: contract schema, API controller spec, web component
+
+## Acceptance criteria
+
+- [ ] Creating a product with an existing SKU is rejected by the API with a message naming the SKU (MD-02).
+- [ ] The products page shows that message next to the SKU field and keeps the typed values.
+- [ ] A negative selling price or reorder threshold is rejected by the contract schema (MD-03).
+```
+
+Blocking edges are native GitHub dependencies, set when the issue is created, so there is no "Blocked by" section in the body. The `Seams:` line matters for the next lesson: the `implement` skill runs `tdd` at "pre-agreed seams", and if a ticket doesn't name them the run turns into "just write the code".
 
 ### What a good ticket looks like
 
@@ -206,14 +259,27 @@ The skill reads the spec issue, explores the codebase again, and drafts tickets.
 
 Every ticket is a **tracer bullet**: a narrow but complete path through schema, API, UI and tests, demoable on its own, sized for one fresh context window. Three checks for each one:
 
-- **Vertical, not horizontal.** "Products: Prisma model and migration" is a layer, not a ticket. "Create and edit a product, with SKU uniqueness enforced" is a ticket. If a ticket is one layer wide, ask for it to be merged with the layers above and below it.
-- **Traceable.** Ask for a `Covers:` line with the TOR requirement IDs the ticket implements, and acceptance criteria that cite the TOR's AC-xx scenarios where one exists. The TOR's section 7.2 demands traceability from every requirement to delivered functionality, and this is the cheapest moment to get it.
-- **Each criterion can fail today.** The skill's own documentation warns that acceptance criteria sometimes pass before any work is done. "The products page loads" passes now. "A second product with SKU001 is rejected with a message naming the SKU" does not.
+- **Vertical, not horizontal.** "Products: Prisma model and migration" is a layer, not a ticket. "Create and edit a product, with SKU uniqueness enforced" is a ticket. The test is the `Demo:` line: if you can't say what you would show when it closes, it is a layer. Ask for it to be merged with the layers above and below it.
+- **Traceable.** The `Covers:` line names the TOR requirement IDs the ticket implements, and the criteria cite the AC-xx scenario where one exists. The TOR's section 7.2 demands traceability from every requirement to delivered functionality, and this is the cheapest moment to get it.
+- **Each criterion can fail today.** The skill's own documentation warns that acceptance criteria sometimes pass before any work is done. "The products page loads" passes now. "A second product with SKU001 is rejected with a message naming the SKU" does not. For each criterion, name the observation that would show it false.
 
-Across the set, two more:
+### Reviewing the list before you approve
 
-- **Size.** Aim for 15 to 25 tickets. The skill tends to over-decompose; fewer than ten means the slices are too fat for one context window, more than thirty means someone will spend the next lesson managing issues instead of building.
-- **Order.** The unblocked frontier should be the foundations: roles and seed data, then stores and suppliers, then products, then the stock view. Purchase orders, receipts, sales and reports hang off those. The load test for NFR-05 is last and blocked by everything.
+The draft list is where the shape goes wrong, and it goes wrong in the same few ways every time. Go down this list against the numbered draft, and ask for the fix in the chat before you say yes:
+
+| What you see in the draft                                                                                                                                     | What it is                                                                                        | What to ask for                                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A ticket called "shared conventions", "i18n", "list and state patterns", "infrastructure"                                                                     | A horizontal slice. Nothing is demoable when it closes, and every earlier ticket already needs it | Dissolve it. The rules go into the first ticket that lists or errors; the later tickets are blocked by that one                                             |
+| A ticket called "acceptance suite", "traceability", "NFR evidence", "handover"                                                                                | Four or five tickets glued together, and most of it is proof of work other tickets own            | Each AC-xx goes onto the functional ticket that implements it. The load test stays as the last ticket. Documents are a criterion on the last ticket, or out |
+| The whole purchase-order lifecycle, or "receive goods" with partial math, idempotency and concurrency, as one ticket                                          | Too fat for one window                                                                            | Split at a status transition (create and submit / approve, reject, cancel) or at a guarantee (receive / receive twice and concurrently)                     |
+| The same criterion on two tickets, such as the AC-07 race on both sales and a final suite                                                                     | The second copy passes before any work starts                                                     | Keep it on the ticket that builds the behaviour, delete the other                                                                                           |
+| Two tickets with no edge between them that both need something new, such as receipts and sales both needing an idempotency key, or four tickets "are audited" | Both will invent it, differently                                                                  | The first ticket builds it, the others are blocked by that one                                                                                              |
+| The same thing on two tickets, such as stores in both "roles" and "master data", or the reorder threshold on both product and stock balance                   | An overlap the implementer will resolve by guessing                                               | Pick one owner and remove it from the other                                                                                                                 |
+| No ticket mentions the Postgres test harness                                                                                                                  | The integration seam will be stubbed                                                              | Add "DB-backed test harness exists and resets between tests" as a criterion on the first stock-writing ticket                                               |
+| Fewer than 15 tickets                                                                                                                                         | Slices too fat for one window                                                                     | Split the three fattest                                                                                                                                     |
+| More than 30 tickets                                                                                                                                          | Someone spends the next lesson managing issues                                                    | Merge the one-layer ones into their neighbours                                                                                                              |
+
+Then two checks on the order. The unblocked frontier should be the foundations: roles and seed data, then stores and suppliers, then products, then the stock view. Purchase orders, receipts, sales and reports hang off those. The load test for NFR-05 is last and blocked by everything.
 
 Iterate until you'd hand the list to a colleague. Then approve it.
 
@@ -228,10 +294,23 @@ Check what happened:
 ```bash
 gh issue list --label ready-for-agent --limit 50           # spec plus every ticket
 gh issue view <spec number>                                 # sub-issues are listed under the body
-gh issue view <first ticket> --json body --jq .body | head  # Covers line, criteria, Blocked by
+gh issue view <first ticket> --json body --jq .body | head  # Covers, Demo, Seams lines and the criteria
+gh issue list --label ready-for-agent --json number,body --jq '.[] | select(.body | test("Covers:") | not) | .number'   # issues without a Covers line: only the spec number should print
 ```
 
 Open the spec on github.com as well. The sub-issue list shows a progress bar, and each ticket's sidebar shows what blocks it. That page is what the next lesson starts from.
+
+### Fixing tickets after they are published
+
+Something always slips through, and a published ticket is cheap to change. Do it in the same session, in plain words, and let the agent use the commands in `docs/agents/issue-tracker.md`:
+
+```
+Ticket #7 has no Covers line and bundles receiving with idempotent and concurrent
+receiving. Add "Covers: GR-01, GR-02, GR-03" to #7, move GR-04, GR-05, AC-02 and the
+concurrency criterion into a new sub-issue of the spec blocked by #7, and label it ready-for-agent.
+```
+
+The agent reads the body, rewrites it, creates the new issue in the right place and moves the edges. By hand, bodies are `gh issue edit <n> --body-file body.md`; sub-issues and native dependencies need `gh` 2.94 or newer (`--parent`, `--blocked-by`) or the API calls in the tracker doc, which is why asking the agent is easier.
 
 ---
 
@@ -253,9 +332,11 @@ The issues themselves live on GitHub and need no commit. Don't commit `.scratch/
 ## 9. Check that it worked
 
 - `gh repo view` shows your fork, and `gh issue list --label ready-for-agent` lists the spec and 15 to 25 tickets.
-- At least two tickets have no blockers. `gh issue view` on one of them shows a `Covers:` line and criteria that would fail against today's code.
+- At least two tickets have no blockers. `gh issue view` on one of them shows `Covers:`, `Demo:` and `Seams:` lines and criteria that would fail against today's code.
+- No ticket is named after a layer or a convention, and no ticket is an "acceptance suite". Each of AC-01 to AC-08 appears on exactly one functional ticket.
 - Every ticket is a sub-issue of the spec, visible on the spec's page on github.com.
 - `git log -1 --stat` shows the skills, the lock file, `docs/agents/` and `AGENTS.md`, and nothing else.
+- The commit is on GitHub, not just on your laptop: `gh api "repos/{owner}/{repo}/contents/docs/agents/issue-tracker.md" --jq .path` prints the path instead of "Not Found".
 - Kiro's `/context show` lists the new skills alongside the repo's own, and nothing from your home directory.
 
 ---
@@ -265,7 +346,7 @@ The issues themselves live on GitHub and need no commit. Don't commit `.scratch/
 - A TOR is **written for a contract**. It contains undecided questions, more than one window's worth of work, and pieces with an order. None of that is the agent's to resolve.
 - **Grill** turns the document into decisions, out loud, in rounds. Facts are the agent's job; decisions are yours; nothing is written.
 - **Spec** turns the conversation into one document the agent can build from, published as a GitHub issue because that is the tracker this repo configured.
-- **Tickets** turns the spec into 15 to 25 vertical slices, each with the TOR requirements it covers and the tickets that block it, as sub-issues you approved before they were published.
+- **Tickets** turns the spec into 15 to 25 vertical slices, each with the TOR requirements it covers, the seams it is tested at and the tickets that block it, as sub-issues you approved before they were published. The skill's template doesn't ask for any of that: the prompt does, and the quiz step is where you catch what it missed.
 - **One conversation**, and one safe place to `/compact`: after the spec is on GitHub, never before.
 - All of it is **installed into the repository** and committed, so the next lesson starts from the same place on every laptop.
 
@@ -302,7 +383,10 @@ These are the answers the room settled on. Your grill will phrase its questions 
 | NFR-05 load test             | One final ticket, blocked by everything: seed 1,000 products and 10,000 movements, measure p95 on search and stock view.                                                                                                                                                                      |
 | Section 7.2 delivery package | Not ticketed. The README already covers install and run; handover documents are not part of the workshop.                                                                                                                                                                                     |
 | Test seams                   | The three seams from the `write-tests` skill, plus Postgres integration tests for the posting paths. See section 6.                                                                                                                                                                           |
-| Ticket shape                 | 15 to 25 vertical slices. Each has a `Covers:` line with TOR IDs and cites AC-xx scenarios where they exist. First frontier: roles and seed, stores and suppliers, products, stock view.                                                                                                      |
+| Ticket shape                 | 15 to 25 vertical slices. Each has `Covers:`, `Demo:` and `Seams:` lines and cites AC-xx scenarios where they exist. First frontier: roles and seed, stores and suppliers, products, stock view.                                                                                              |
+| Acceptance scenarios         | AC-01 to AC-08 are criteria on the functional tickets that implement them, one ticket each. No separate acceptance-suite ticket. The traceability matrix, if wanted, is a criterion on the last ticket.                                                                                       |
+| Shared infrastructure        | Audit records, idempotency keys, document numbering, pagination and list states are rules in the spec, built by the first ticket that needs each one. Later tickets that use them are blocked by that ticket. No "conventions" ticket.                                                        |
+| Integration test harness     | Does not exist yet. Setting it up (Docker Postgres, reset between tests) is a criterion on the first ticket that writes stock, so the row lock is proven where it is introduced.                                                                                                              |
 
 ---
 
