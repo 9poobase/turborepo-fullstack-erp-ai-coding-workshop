@@ -19,7 +19,7 @@ The document we are working from is [`docs/tors/Retail_ERP_TOR_EN.pdf`](../docs/
 
 It is a good TOR. It is also written for a contract, not for a build. Three things stand in the way of "build it":
 
-- **It contains decisions nobody has made yet.** Section 10 lists five open questions. Section 2 says screens must be in Thai, and this app is in English. The TOR names four roles; our `User` model has none. An agent given the document will make all of these calls silently, and differently on every laptop.
+- **It contains decisions nobody has made yet.** Section 10 lists five open questions. Section 2 says screens must be in Thai, and this app is in English. The TOR names four roles; our `User` model has two, `ADMIN` and `STAFF`, and neither maps onto them. An agent given the document will make all of these calls silently, and differently on every laptop.
 - **It is too big for one context window.** Lesson 2 explained the dumb zone. An agent that reads the TOR, explores the codebase, and starts building purchase orders is deep in it before the first test runs. The work has to be cut into pieces that each fit a fresh window.
 - **The pieces have an order.** You can't receive goods against a purchase order that doesn't exist, and you can't create one without a supplier. Hand an agent "sales" first and it invents products, stores and stock on the way.
 
