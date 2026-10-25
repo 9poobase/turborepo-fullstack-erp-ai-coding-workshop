@@ -244,17 +244,17 @@ concurrency:
   cancel-in-progress: true
 ```
 
-| Part                              | Why                                                                                                                                                                                                   |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Its own file                      | CI is a test and may block a merge. This is an opinion and may not. Keeping them apart means a slow model, an empty credit balance or a bad review can never turn CI red                              |
-| `opened, synchronize, reopened`   | Every push to the PR branch gets a fresh review, the CodeRabbit behaviour                                                                                                                             |
-| `workflow_dispatch` with `pr`     | Review a PR that already exists, like lesson 7's, without pushing to it. Also "review it again" on demand                                                                                             |
-| `permissions`                     | The job's `GITHUB_TOKEN` can read the repo and issues and write pull request reviews, nothing else. It can't push, and the permission rules and the guard stop the agent asking it to merge           |
-| `concurrency`                     | Two pushes in a minute start one review, not two. The second run cancels the first                                                                                                                    |
-| `continue-on-error` on the review | The step's exit code never marks the PR red. An advisory check that fails loudly teaches people to ignore it                                                                                          |
-| `timeout-minutes: 20`             | A stuck agent is a stuck runner. Kiro's own default headless timeout is six hours                                                                                                                     |
-| `actions/setup-node`              | The guard hook is `node scripts/agent-guard.mjs`. No Node, no guard, and the hook would fail open                                                                                                     |
-| The `KIRO_API_KEY` check          | Pull requests opened from **other** forks don't receive your secrets, by GitHub's design. The step says so in the log and exits 0 instead of failing. Your own branches, like lesson 7's, get the key |
+| Part                              | Why                                                                                                                                                                                                                  |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Its own file                      | CI is a test and may block a merge. This is an opinion and may not. Keeping them apart means a slow model, an empty credit balance or a bad review can never turn CI red                                             |
+| `opened, synchronize, reopened`   | Every push to the PR branch gets a fresh review, the CodeRabbit behaviour                                                                                                                                            |
+| `workflow_dispatch` with `pr`     | Review a PR that already exists, like lesson 7's, without pushing to it. Also "review it again" on demand                                                                                                            |
+| `permissions`                     | The job's `GITHUB_TOKEN` can read the repo and issues and write pull request reviews, nothing else. It can't push, and the permission rules and the guard stop the agent asking it to merge                          |
+| `concurrency`                     | Two pushes in a minute start one review, not two. The second run cancels the first                                                                                                                                   |
+| `continue-on-error` on the review | The step's exit code never marks the PR red. An advisory check that fails loudly teaches people to ignore it                                                                                                         |
+| `timeout-minutes: 20`             | A stuck agent is a stuck runner. Kiro's own default headless timeout is six hours                                                                                                                                    |
+| `actions/setup-node`              | The guard hook is `node scripts/agent-guard.mjs`. No Node, no guard, and the hook would fail open. `package-manager-cache: false`, because this job never installs pnpm and the cache step would fail looking for it |
+| The `KIRO_API_KEY` check          | Pull requests opened from **other** forks don't receive your secrets, by GitHub's design. The step says so in the log and exits 0 instead of failing. Your own branches, like lesson 7's, get the key                |
 
 The review step is the command from section 6 with the PR number from the event, and the install line is the one from Kiro's headless documentation:
 
