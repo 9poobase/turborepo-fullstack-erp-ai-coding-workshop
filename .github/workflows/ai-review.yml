@@ -1,0 +1,60 @@
+name: AI review
+
+# Advisory only. Posts one comment-state review on the pull request and never
+# fails the PR. The merge decision stays with a human. See lessons/08.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number to review
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: write
+
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number || inputs.pr }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      # The guard hook is `node scripts/agent-guard.mjs`, so the reviewer needs Node.
+      # No pnpm here: the reviewer never installs or builds, and setup-node's
+      # default cache step would fail looking for the pnpm binary.
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+
+      - name: Install Kiro CLI
+        run: curl -fsSL https://cli.kiro.dev/install | bash
+
+      - name: Review the pull request
+        continue-on-error: true
+        env:
+          KIRO_API_KEY: ${{ secrets.KIRO_API_KEY }}
+          KIRO_HEADLESS_WORKFLOW_TIMEOUT_SECS: '900'
+        run: |
+          if [ -z "$KIRO_API_KEY" ]; then
+            echo "::notice::KIRO_API_KEY is not set; skipping the AI review (expected on pull requests from forks)."
+            exit 0
+          fi
+          mkdir -p /tmp/ai-review
+          kiro-cli chat --v3 --no-interactive --agent reviewer "Review pull request #${PR_NUMBER} and post the review."

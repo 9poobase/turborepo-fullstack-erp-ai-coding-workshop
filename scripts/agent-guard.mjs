@@ -32,6 +32,22 @@ const rules = [
     test: /\brm\s+(-[a-zA-Z]*r[a-zA-Z]*\s+)+(?![^\n]*\b(node_modules|dist|\.turbo)\b)[^\n]+/,
     why: 'removes files that are not build output and may not be in git',
   },
+  // The next three keep the merge decision with a human. See lessons/08.
+  {
+    name: 'pull request merge',
+    test: /\bgh\s+pr\s+merge\b/,
+    why: 'merges a pull request, which only a human reviewer who is not the author may do',
+  },
+  {
+    name: 'pull request verdict',
+    test: /\bgh\s+pr\s+review\b[^\n]*\s(-a|--approve|-r|--request-changes)\b/,
+    why: "approves or requests changes on a pull request, which is the human reviewer's verdict; review with --comment instead",
+  },
+  {
+    name: 'ticket or pull request close',
+    test: /\bgh\s+(issue|pr)\s+(close|reopen)\b/,
+    why: 'closes or reopens a ticket or pull request; tickets close when their pull request merges',
+  },
 ];
 
 // Tool names the three harnesses use for "run a shell command". Anything else

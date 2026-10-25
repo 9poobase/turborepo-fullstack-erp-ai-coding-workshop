@@ -221,6 +221,7 @@ Ticket shape for this repository, on top of your usual template:
 - No cross-cutting tickets. Pagination, list states, error format, audit records, idempotency keys and document numbering land in the first ticket that needs them, and every later ticket that uses them is blocked by that ticket.
 - The first ticket that writes stock sets up the Postgres integration test harness as one of its criteria.
 - The last ticket is the NFR-05 load test, blocked by everything.
+- Set every blocking edge as a native GitHub dependency and leave the "Blocked by" section out of the published body. Draft numbers such as T02 never go into an issue.
 Show me the numbered list before publishing anything.
 ```
 
@@ -251,7 +252,7 @@ Seams: contract schema, API controller spec, web component
 - [ ] A negative selling price or reorder threshold is rejected by the contract schema (MD-03).
 ```
 
-Blocking edges are native GitHub dependencies, set when the issue is created, so there is no "Blocked by" section in the body. The `Seams:` line matters for the next lesson: the `implement` skill runs `tdd` at "pre-agreed seams", and if a ticket doesn't name them the run turns into "just write the code".
+Blocking edges are native GitHub dependencies, set when the issue is created, and the sidebar is the truth. The skill's template does have a "Blocked by" section, but it is meant to be left out once the native edge is set, which is why the invocation above says so. If a published body still carries one with draft numbers such as `#T02`, the edge in the sidebar is right and the text is a leftover from the numbered list you approved: delete the section. The `Seams:` line matters for the next lesson: the `implement` skill runs `tdd` at "pre-agreed seams", and if a ticket doesn't name them the run turns into "just write the code".
 
 ### What a good ticket looks like
 
@@ -296,6 +297,7 @@ gh issue list --label ready-for-agent --limit 50           # spec plus every tic
 gh issue view <spec number>                                 # sub-issues are listed under the body
 gh issue view <first ticket> --json body --jq .body | head  # Covers, Demo, Seams lines and the criteria
 gh issue list --label ready-for-agent --json number,body --jq '.[] | select(.body | test("Covers:") | not) | .number'   # issues without a Covers line: only the spec number should print
+gh issue list --label ready-for-agent --json number,body --jq '.[] | select(.body | test("#T[0-9]")) | .number'          # draft numbers left in a body: nothing should print
 ```
 
 Open the spec on github.com as well. The sub-issue list shows a progress bar, and each ticket's sidebar shows what blocks it. That page is what the next lesson starts from.
@@ -308,6 +310,13 @@ Something always slips through, and a published ticket is cheap to change. Do it
 Ticket #7 has no Covers line and bundles receiving with idempotent and concurrent
 receiving. Add "Covers: GR-01, GR-02, GR-03" to #7, move GR-04, GR-05, AC-02 and the
 concurrency criterion into a new sub-issue of the spec blocked by #7, and label it ready-for-agent.
+```
+
+Or, when the last check above printed numbers:
+
+```
+Tickets #17 to #38 still have a "Blocked by" section with draft numbers like #T02. The native
+dependencies are correct; remove that section from each body and change nothing else.
 ```
 
 The agent reads the body, rewrites it, creates the new issue in the right place and moves the edges. By hand, bodies are `gh issue edit <n> --body-file body.md`; sub-issues and native dependencies need `gh` 2.94 or newer (`--parent`, `--blocked-by`) or the API calls in the tracker doc, which is why asking the agent is easier.
@@ -333,6 +342,7 @@ The issues themselves live on GitHub and need no commit. Don't commit `.scratch/
 
 - `gh repo view` shows your fork, and `gh issue list --label ready-for-agent` lists the spec and 15 to 25 tickets.
 - At least two tickets have no blockers. `gh issue view` on one of them shows `Covers:`, `Demo:` and `Seams:` lines and criteria that would fail against today's code.
+- No body contains a draft number: the `#T[0-9]` query from section 7 prints nothing. Blocking edges live in the sidebar, not in the text.
 - No ticket is named after a layer or a convention, and no ticket is an "acceptance suite". Each of AC-01 to AC-08 appears on exactly one functional ticket.
 - Every ticket is a sub-issue of the spec, visible on the spec's page on github.com.
 - `git log -1 --stat` shows the skills, the lock file, `docs/agents/` and `AGENTS.md`, and nothing else.
