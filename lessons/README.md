@@ -8,3 +8,6 @@ Read these alongside the workshop. Each lesson explains the ideas behind one par
 | 2   | [Context engineering: AGENTS.md and skills](02-context-engineering-agents-md-and-skills.md)            | 10–15 min |
 | 3   | [Start clean: reset your agent, lock the project settings, switch off memory](03-clean-agent-setup.md) | 15–20 min |
 | 4   | [From a TOR to tickets: grill, spec, tickets](04-from-tor-to-tickets.md)                               | 45–60 min |
+| 5   | [Hooks: a guard between the agent and the shell](05-hooks-guard-the-shell.md)                          | 15–20 min |
+| 6   | [Subagents: fresh windows that work for the main one](06-subagents-fresh-windows.md)                   | 10–15 min |
+| 7   | [From tickets to code: one turn of the implement loop](07-from-tickets-to-code.md)                     | 45–60 min |
