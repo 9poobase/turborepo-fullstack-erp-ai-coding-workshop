@@ -63,10 +63,10 @@ Without this, the agent's `gh pr create` opens a pull request against the worksh
 **Switch on Actions for your fork.** GitHub disables workflows on every fork until the owner says otherwise. Open your fork on github.com, click the **Actions** tab, and press the button that enables workflows. Then check:
 
 ```bash
-gh workflow list                                     # expect: CI
+gh workflow list                                     # expect: CI (and AI review, from lesson 8)
 ```
 
-An empty list means the button wasn't pressed. Without it, the "CI green" step later in the loop never happens.
+`gh workflow list` is necessary but not sufficient: a fork lists its workflows as `active` even while Actions is still switched off, and `gh api repos/{owner}/{repo}/actions/permissions` can report `enabled: true` on a fork that has never run a thing. The signal that actually proves the button was pressed is a run appearing once a pull request exists. If section 5's `gh pr checks` reports "no checks" and `gh run list` is empty right after the agent opens the PR, the button wasn't pressed: open the **Actions** tab and enable workflows, then re-run the job from the PR's Checks tab or push an empty commit. Without this, the "CI green" step later in the loop never happens.
 
 While you are here, read the workflow that `CI` names. It is one job, and it has been in the repository since the first commit:
 

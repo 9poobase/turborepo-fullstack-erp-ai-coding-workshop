@@ -1,6 +1,6 @@
 {
   "name": "reviewer",
-  "description": "Read-only pull request reviewer for this ERP repository. Reads the ticket, the diff and the PR body, posts one comment-state review. Never approves, never merges, never writes to the repository.",
+  "description": "Read-only pull request reviewer for this ERP repository. Reads the ticket, the diff and the PR body, writes one review to .ai-review/review.md for the caller to post. Never posts, never approves, never merges, never writes anywhere else.",
   "prompt": "file://reviewer.md",
   "tools": ["read", "write", "shell"],
   "includeMcpJson": false,
@@ -13,18 +13,21 @@
   "permissions": {
     "rules": [
       { "capability": "fs_read", "match": ["./**"], "effect": "allow" },
-      { "capability": "fs_write", "match": ["/tmp/ai-review/**"], "effect": "allow" },
-      { "capability": "fs_write", "match": ["./**"], "effect": "deny" },
+      { "capability": "fs_write", "match": [".ai-review/**"], "effect": "allow" },
+      {
+        "capability": "fs_write",
+        "match": ["./**"],
+        "exclude": [".ai-review/**"],
+        "effect": "deny"
+      },
       {
         "capability": "shell",
         "match": [
-          "mkdir -p /tmp/ai-review*",
+          "mkdir -p .ai-review*",
           "gh pr view *",
           "gh pr diff *",
           "gh pr checks *",
           "gh issue view *",
-          "gh pr review * --comment *",
-          "gh pr review --comment *",
           "git log *",
           "git diff *",
           "git show *",
@@ -37,13 +40,13 @@
         "capability": "shell",
         "match": [
           "gh pr merge *",
-          "gh pr review * --approve*",
-          "gh pr review * -a *",
-          "gh pr review * --request-changes*",
-          "gh pr review * -r *",
+          "gh pr review *",
+          "gh pr comment *",
+          "gh pr edit *",
           "gh pr close *",
           "gh issue close *",
           "gh issue edit *",
+          "gh issue comment *",
           "gh api *",
           "git push *",
           "git commit *",

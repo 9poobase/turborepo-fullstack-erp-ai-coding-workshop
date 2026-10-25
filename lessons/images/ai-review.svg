@@ -5,7 +5,7 @@
 <rect width="1200" height="990" fill="white"/>
 <rect x="24" y="24" width="1152" height="942" rx="12" fill="#f8fafc" stroke="#dce3eb" stroke-width="2"/>
 <text x="600" y="78" class="title" text-anchor="middle">An AI reviewer on every pull request</text>
-<text x="600" y="114" class="body" text-anchor="middle">The agent is the one amber row. It reads four things and writes one. The verdict and the merge stay with you.</text>
+<text x="600" y="114" class="body" text-anchor="middle">The agent is the one amber row. It reads four things and writes one file. The job posts it; the verdict and the merge stay with you.</text>
 
 <!-- 1 trigger -->
 <rect x="60" y="150" width="1080" height="120" rx="12" fill="#ffffff" stroke="#64748b" stroke-width="2"/>
@@ -23,7 +23,7 @@
 <rect x="76" y="324" width="40" height="36" rx="8" fill="#64748b"/><text x="96" y="348" class="badge" text-anchor="middle">2</text>
 <text x="128" y="349" class="label">Actions job</text>
 <text x="76" y="384" class="small">Checkout, Node, Kiro CLI. The API key comes from a repository secret.</text>
-<text x="76" y="406" class="small">Advisory only: the job never fails the PR.</text>
+<text x="76" y="406" class="small">Posts the file as a comment-state review. Never fails the PR.</text>
 <rect x="720" y="326" width="404" height="88" rx="8" fill="#f1f5f9" stroke="#dce3eb" stroke-width="1.5"/>
 <text x="736" y="362" class="code">kiro-cli chat --v3 --no-interactive \</text>
 <text x="736" y="386" class="code">  --agent reviewer</text>
@@ -39,9 +39,9 @@
 <text x="76" y="614" class="small">The PR body: Evidence, Merge Danger</text>
 <text x="76" y="636" class="small">CI status</text>
 <text x="440" y="544" class="who" fill="#c08a1d">WRITES</text>
-<text x="440" y="570" class="small">One review, comment state only:</text>
-<text x="440" y="592" class="small">verdict, criteria table, findings.</text>
-<text x="440" y="626" class="code">gh pr review 16 --comment</text>
+<text x="440" y="570" class="small">One file, .ai-review/review.md:</text>
+<text x="440" y="592" class="small">verdict, criteria table, findings. It never posts.</text>
+<text x="440" y="626" class="code">.ai-review/review.md</text>
 <rect x="780" y="486" width="344" height="120" rx="8" fill="#fde8e6" stroke="#b42318" stroke-width="1.5"/>
 <text x="952" y="514" class="no" text-anchor="middle">Never approves.</text>
 <text x="952" y="538" class="no" text-anchor="middle">Never requests changes.</text>

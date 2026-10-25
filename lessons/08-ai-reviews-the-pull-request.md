@@ -1,7 +1,7 @@
 # Lesson 8: An AI reviewer on every pull request: Kiro in GitHub Actions
 
 **Time:** about 30–45 minutes
-**Goal:** put a read-only reviewer agent on your fork that reads the ticket, the diff and the PR body of every pull request, posts one review as a comment, and never approves, merges or closes anything. Then let a human merge the lesson 7 pull request with that review as their script.
+**Goal:** put a read-only reviewer agent on your fork that reads the ticket, the diff and the PR body of every pull request, writes one review that the job posts as a comment, and never approves, merges or closes anything. Then let a human merge the lesson 7 pull request with that review as their script.
 
 By the end of this lesson you should be able to answer three questions:
 
@@ -15,7 +15,7 @@ Lesson 7 ended with a pull request open on your fork and a rule: it merges when 
 
 ## 1. What this is, and what it is not
 
-![Top to bottom in four rows. First, a trigger: a push to the pull request branch, or a manual dispatch with the PR number. Second, a GitHub Actions job that checks out the repository, installs Node and Kiro CLI, and runs kiro-cli headless with the reviewer agent and the API key from a repository secret. Third, the reviewer agent, an amber row, reads four things: the ticket, the diff against main, the pull request body and the CI status, under the same guard hook as every other agent, with read-only permissions. Its only write is one comment-state review on the pull request. A red strip in the row says: never approves, never requests changes, never merges, never closes. Fourth, the human: reads the review as a script, runs the demo line, reads the diff against the criteria, and merges by hand. A note across the bottom says: the review is advice; the verdict and the merge are a human's.](images/ai-review.svg)
+![Top to bottom in four rows. First, a trigger: a push to the pull request branch, or a manual dispatch with the PR number. Second, a GitHub Actions job that checks out the repository, installs Node and Kiro CLI, and runs kiro-cli headless with the reviewer agent and the API key from a repository secret. Third, the reviewer agent, an amber row, reads four things: the ticket, the diff against main, the pull request body and the CI status, under the same guard hook as every other agent, with read-only permissions. Its only write is one review file, which the job posts as a comment-state review on the pull request. A red strip in the row says: never approves, never requests changes, never merges, never closes. Fourth, the human: reads the review as a script, runs the demo line, reads the diff against the criteria, and merges by hand. A note across the bottom says: the review is advice; the verdict and the merge are a human's.](images/ai-review.svg)
 
 You have met this product category. CodeRabbit, GitHub Copilot code review and a dozen others install as a GitHub App, read every pull request and leave comments. They are good, and if your company pays for one, use it. This lesson builds the small version by hand, for three reasons that matter more in this repository than the polish does:
 
@@ -79,16 +79,22 @@ Lesson 3 built the `erp` agent so the project, not your home directory, decides 
   "permissions": {
     "rules": [
       { "capability": "fs_read", "match": ["./**"], "effect": "allow" },
-      { "capability": "fs_write", "match": ["/tmp/ai-review/**"], "effect": "allow" },
-      { "capability": "fs_write", "match": ["./**"], "effect": "deny" },
+      { "capability": "fs_write", "match": [".ai-review/**"], "effect": "allow" },
+      {
+        "capability": "fs_write",
+        "match": ["./**"],
+        "exclude": [".ai-review/**"],
+        "effect": "deny"
+      },
       {
         "capability": "shell",
         "match": [
+          "mkdir -p .ai-review*",
           "gh pr view *",
           "gh pr diff *",
           "gh pr checks *",
           "gh issue view *",
-          "gh pr review * --comment *",
+          "git log *",
           "..."
         ],
         "effect": "allow"
@@ -97,10 +103,11 @@ Lesson 3 built the `erp` agent so the project, not your home directory, decides 
         "capability": "shell",
         "match": [
           "gh pr merge *",
-          "gh pr review * --approve*",
-          "gh pr review * --request-changes*",
+          "gh pr review *",
+          "gh pr comment *",
           "gh pr close *",
           "gh issue close *",
+          "gh api *",
           "git push *",
           "..."
         ],
@@ -125,7 +132,9 @@ The full file has the complete lists. Four things to read in it:
 
 **The resources are the rules, not the skills.** The `erp` agent loads every skill in `.kiro/skills`. The reviewer loads the three `AGENTS.md` files and nothing else. It is not going to call `tdd`, `implement` or `pr`, and it is not going to call `code-review` either: that skill spawns two sub-agents, and Kiro's headless documentation doesn't say whether sub-agents run there. The reviewer does its own review from its own brief, and the lesson has no dependency on anything lesson 4 installed.
 
-**The permissions make it read-only.** Kiro's V3 engine decides every tool call with capability rules: `fs_read`, `fs_write`, `shell` and a few more, each with `allow`, `ask` or `deny`, and `deny` beats everything. The reviewer may read the whole checkout, may write only under `/tmp/ai-review/` (the review body goes there before it is posted), and may run only the shell commands in the allow list: read the PR, read the diff, read the ticket, read CI, post a comment-state review, and a few read-only `git` commands. The deny list names the things it must never do even if someone later widens the allow list: merge, approve, request changes, close, push, commit, `gh api`.
+**The permissions make it read-only.** Kiro's V3 engine decides every tool call with capability rules: `fs_read`, `fs_write`, `shell` and a few more, each with `allow`, `ask` or `deny`, and `deny` beats everything. The reviewer may read the whole checkout, may write only under `.ai-review/`, and may run only the shell commands in the allow list: read the PR, read the diff, read the ticket, read CI, and a few read-only `git` commands. It cannot post anything. `gh pr review`, `gh pr comment` and `gh api` are in the deny list next to merge, close, push and commit, so the deny list holds even if someone later widens the allow list. Posting is the workflow's job, in section 7.
+
+Two details in the write rules cost us a run each, so read them now. `.ai-review/` is inside the checkout and in `.gitignore`, not under `/tmp`, because Kiro sends every write outside the workspace to `ask` whatever the rules say, and in headless mode an `ask` is a refusal: our first version pointed at `/tmp/ai-review/`, and the agent finished the review and could not save it. And the repository-wide deny carries `"exclude": [".ai-review/**"]`, because `deny` beats `allow`: without the exclusion the deny would cover the output directory too.
 
 The rule that makes this work in CI is one line in Kiro's documentation: **in headless mode, every `ask` is treated as a deny.** Anything not in the allow list is refused. That is also why the workflow in section 7 does **not** pass `--trust-all-tools`. That flag turns every `ask` into an `allow`, which would hand the agent back every command the deny list doesn't name. The official example in Kiro's docs uses `--trust-tools=read_file,grep_search`; this lesson puts the same decision in the agent file, where it is versioned, instead of on the command line.
 
@@ -159,9 +168,9 @@ Open `.kiro/agents/reviewer.md`. It is the whole review, and it is about a page.
 | **Evidence**     | Could a reviewer who wasn't in the room reproduce the `Demo:` line from the PR body alone? What is missing?                                   | The Evidence section exists for the human reviewer. This checks it is usable before they open it                                             |
 | **Merge danger** | Migrations, seed, shared packages, renamed routes or schemas, what the blocked tickets inherit. An edited applied migration is the first line | Lesson 7's "an unproven ticket that closes opens the gate for everything behind it"                                                          |
 
-**What it writes.** One review, posted with `gh pr review N --comment --body-file`, in a fixed template: a verdict line for the human, a criteria table, findings with file and line, Evidence, Merge danger, questions for the author. A hidden `<!-- ai-review -->` marker so later runs can find earlier ones. Every run posts a new review rather than editing the old one; the human reviewer wants the history, and so does the author who pushed a fix.
+**What it writes.** One file, `.ai-review/review.md`, in a fixed template: a verdict line for the human, a criteria table, findings with file and line, Evidence, Merge danger, questions for the author. A hidden `<!-- ai-review -->` marker so later runs can find earlier ones. It does not post the file. The workflow posts it in section 7, and in section 6 you do, after reading it. Every run is a new review rather than an edit of the old one; the human reviewer wants the history, and so does the author who pushed a fix.
 
-**Why `--comment` and nothing else.** GitHub has three review states. Approve and request changes are verdicts, and lesson 7's rule says the verdict belongs to a human who isn't the author. An agent that approves is the author's agent approving the author's work with extra steps. So the verdict line in the review says `Looks mergeable after the demo`, `Read the findings first` or `Do not merge yet`, in words, as advice, and the state stays "commented". The permission rules deny the other two flags, the guard denies them, and the brief says not to. Three times, because an instruction is the weakest of the three and the only one that lives in the prompt.
+**Why the agent doesn't post.** GitHub has three review states. Approve and request changes are verdicts, and lesson 7's rule says the verdict belongs to a human who isn't the author. An agent that approves is the author's agent approving the author's work with extra steps. So the verdict line in the review says `Looks mergeable after the demo`, `Read the findings first` or `Do not merge yet`, in words, as advice, and the GitHub state is chosen by whoever posts the file: one line in the workflow that says `--comment`, which a human reads in a diff, instead of a flag the model picks at run time. The permission rules deny every posting command to the agent, the guard denies approve and merge to every agent, and the brief says not to. Three times, because an instruction is the weakest of the three and the only one that lives in the prompt.
 
 Read the template at the bottom of the file once, and then read the review it produces in section 6 against it. Where the two differ, the brief is what you edit.
 
@@ -182,7 +191,7 @@ They are already in the file on the workshop repository. If your fork's `main` h
 ```bash
 echo '{"tool_input":{"command":"gh pr merge 16 --squash"}}'                          | node scripts/agent-guard.mjs; echo "exit $?"   # expect: the message, exit 2
 echo '{"tool_input":{"command":"gh pr review 16 --approve"}}'                        | node scripts/agent-guard.mjs; echo "exit $?"   # expect: the message, exit 2
-echo '{"tool_input":{"command":"gh pr review 16 --comment --body-file /tmp/r.md"}}'  | node scripts/agent-guard.mjs; echo "exit $?"   # expect: nothing, exit 0
+echo '{"tool_input":{"command":"gh pr review 16 --comment --body-file .ai-review/review.md"}}' | node scripts/agent-guard.mjs; echo "exit $?"   # expect: nothing, exit 0
 ```
 
 This changes the `erp` agent too. From now on the implementing agent in lesson 7's loop can't merge or approve either, which it never should have been able to. The guard is one file for every agent and every tool, and that is the point of it.
@@ -196,8 +205,7 @@ Before the workflow exists, run the exact command it will run, on your laptop, a
 ```bash
 export KIRO_API_KEY="..."                            # this terminal only; don't add it to your profile
 gh pr list                                           # note the PR number; ours was 18
-mkdir -p /tmp/ai-review
-kiro-cli chat --v3 --no-interactive --agent reviewer "Review pull request #18 and post the review."
+kiro-cli chat --v3 --no-interactive --agent reviewer "Review pull request #18."
 ```
 
 `--v3` selects the engine that reads the permission rules; `--no-interactive` is headless mode, which needs the instruction as an argument and uses the key; `--agent reviewer` picks the file from section 3 instead of `cli.json`'s default `erp`. Nothing else: no `--trust-all-tools`, for the reason in section 3.
@@ -207,10 +215,17 @@ kiro-cli chat --v3 --no-interactive --agent reviewer "Review pull request #18 an
 The run prints its tool calls as it goes, and it has a shape:
 
 1. **It reads before it writes.** `gh pr view`, then `gh issue view` on the ticket from the `Closes` line, then `gh pr diff`, then whole files from the checkout where the diff needs context, then `gh pr checks`. If it tries anything outside that list, you see Kiro refuse it, and the brief tells it to carry on and report the refusal.
-2. **It writes one file** under `/tmp/ai-review/` and posts it with `gh pr review 18 --comment --body-file ...`. If it tries `--approve`, three things stop it, and you should see which one did in the output.
-3. **It prints the review URL and stops.** Two to six minutes, well under the tokens lesson 7's run took, because it reads a diff instead of exploring a codebase.
+2. **It writes one file**, `.ai-review/review.md`, and nothing else. If it tries to post it, with any flag, you see Kiro refuse the command, and the brief tells it to carry on.
+3. **It says the file is written and stops.** Two to six minutes, well under the tokens lesson 7's run took, because it reads a diff instead of exploring a codebase.
 
 **[Fill from a real run]** the console output of one run, trimmed to the tool calls and the final URL, and the time it took.
+
+Read the file, then post it yourself. This is the only time a person posts the review by hand, and it is worth doing once, because the command is the one the workflow runs in section 7:
+
+```bash
+cat .ai-review/review.md
+gh pr review 18 --comment --body-file .ai-review/review.md
+```
 
 Open the PR on github.com. The review is there, from you, in comment state, with the template from section 4. Read it against the lesson 7 ticket:
 
@@ -218,7 +233,7 @@ Open the PR on github.com. The review is there, from you, in comment state, with
 - Are the findings things `AGENTS.md` actually says? A finding that cites a rule not in the file is the brief drifting, and the fix is in `reviewer.md`, not in the code.
 - Does the Evidence paragraph say the same thing you concluded in lesson 7 section 5 when you did the demo?
 
-If the run refused something it needed, or needed something the allow list doesn't have, the fix is in `reviewer.json`'s allow list, one glob, as narrow as the command. Don't reach for `--trust-all-tools`.
+If the run refused something it needed, or needed something the allow list doesn't have, the fix is in `reviewer.json`'s allow list, one glob, as narrow as the command. Don't reach for `--trust-all-tools`. The one thing a glob can't fix is a write outside the checkout; keep the output under `.ai-review/`.
 
 ---
 
@@ -255,31 +270,41 @@ concurrency:
 | `timeout-minutes: 20`             | A stuck agent is a stuck runner. Kiro's own default headless timeout is six hours                                                                                                                                    |
 | `actions/setup-node`              | The guard hook is `node scripts/agent-guard.mjs`. No Node, no guard, and the hook would fail open. `package-manager-cache: false`, because this job never installs pnpm and the cache step would fail looking for it |
 | The `KIRO_API_KEY` check          | Pull requests opened from **other** forks don't receive your secrets, by GitHub's design. The step says so in the log and exits 0 instead of failing. Your own branches, like lesson 7's, get the key                |
+| The `Post the review` step        | The agent only writes the file. One line in this step posts it, and it says `--comment`. If the file is missing, the step leaves a short comment with a link to the run log instead of staying silent                |
 
-The review step is the command from section 6 with the PR number from the event, and the install line is the one from Kiro's headless documentation:
+The review step is the command from section 6 with the PR number from the event, the install line is the one from Kiro's headless documentation, and the posting step is the command you ran by hand at the end of section 6:
 
 ```yaml
 - name: Install Kiro CLI
   run: curl -fsSL https://cli.kiro.dev/install | bash
 
 - name: Review the pull request
+  id: review
   continue-on-error: true
   env:
     KIRO_API_KEY: ${{ secrets.KIRO_API_KEY }}
-  run: kiro-cli chat --v3 --no-interactive --agent reviewer "Review pull request #${PR_NUMBER} and post the review."
+  run: |
+    mkdir -p .ai-review
+    kiro-cli chat --v3 --no-interactive --agent reviewer "Review pull request #${PR_NUMBER}."
+
+- name: Post the review
+  if: steps.review.outputs.skipped != 'true'
+  run: gh pr review "$PR_NUMBER" --comment --body-file .ai-review/review.md
 ```
+
+The full file's posting step also checks that the file exists, and leaves a one-line comment with the run URL when it doesn't. A silent empty run is the one failure a reviewer can't notice from the PR.
 
 **[Verify in a real run]** that `kiro-cli` is on `PATH` in the step after the installer, as the official example assumes. If it isn't, add the installer's target directory to `$GITHUB_PATH` in the install step.
 
-The `gh` CLI is preinstalled on GitHub's runners and reads `GH_TOKEN` and `GH_REPO` from the job's environment, so the agent's `gh pr review` posts as `github-actions` on your fork without any extra setup.
+The `gh` CLI is preinstalled on GitHub's runners and reads `GH_TOKEN` and `GH_REPO` from the job's environment, so the agent's `gh pr view` reads, and the job's `gh pr review` posts, as `github-actions` on your fork without any extra setup.
 
 ### Commit it on `main`
 
 Everything this lesson added is repository configuration, and like lesson 5's hook and lesson 7's `pr` skill it goes on `main` before anything branches:
 
 ```bash
-git status --short            # expect: reviewer.json, reviewer.md, ai-review.yml, agent-guard.mjs
-git add .kiro/agents/reviewer.json .kiro/agents/reviewer.md .github/workflows/ai-review.yml scripts/agent-guard.mjs
+git status --short            # expect: reviewer.json, reviewer.md, ai-review.yml, agent-guard.mjs, .gitignore
+git add .kiro/agents/reviewer.json .kiro/agents/reviewer.md .github/workflows/ai-review.yml scripts/agent-guard.mjs .gitignore
 git commit -m "Add the read-only AI reviewer agent and its workflow"
 git push
 gh workflow list                                     # expect: CI and AI review
@@ -296,7 +321,7 @@ gh run watch                                         # pick the AI review run
 
 Then open the PR. A second review from `github-actions`, same template, probably a few findings different from the local one in section 6: same brief, different run. **[Fill from a real run]** the run time from the Actions page and one line on how the two reviews differed.
 
-One thing to notice in the Actions log: the hook fires. Every shell command the agent ran shows the guard being consulted first, in a runner nobody is watching. That is lesson 5's argument finished: a hook runs whether or not anyone is there.
+Two things to notice in the Actions log. The hook fires: every shell command the agent ran shows the guard being consulted first, in a runner nobody is watching. That is lesson 5's argument finished: a hook runs whether or not anyone is there. And the review is posted in a separate step, after the agent has exited. The agent never held the ability to post.
 
 ---
 
@@ -322,17 +347,18 @@ Working alone? Review and merge your own PR the same way, and know that it is th
 
 The reviewer is an agent in a fresh window with a one-page brief. It will be wrong sometimes, and the fix is almost never in the code it reviewed. Things that come up:
 
-| What you see                                            | What it is                                                                            | What to do                                                                                                                     |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| A `file:line` that doesn't say what the review claims   | The agent summarised from the diff and guessed the line                               | Check the row yourself; comment on the PR. If it keeps happening, add "quote the line" to the brief's Criteria check           |
-| **not found** on a criterion that is plainly covered    | The test is at a seam the reviewer didn't look at, or the criterion is worded loosely | The ticket's `Seams:` line should have led it there. If the wording is the problem, fix the ticket, as lesson 7 section 7 says |
-| A finding that cites a rule `AGENTS.md` doesn't contain | The brief drifted into general opinion                                                | Edit `reviewer.md`. The Standards check names the rules on purpose; keep it that way                                           |
-| "No `Closes` reference found" as the first finding      | The PR body lacks `Closes #T`, so there is no ticket to review against                | Edit the PR body. Lesson 7's invocation asked for the line; the `pr` skill doesn't add it on its own                           |
-| A refused command in the review text                    | The allow list is missing something the brief needs                                   | Add one narrow glob to `reviewer.json`. Never `--trust-all-tools`                                                              |
-| The step logs "KIRO_API_KEY is not set" and exits 0     | The PR came from another fork, or the secret was never set                            | `gh secret list`. For a colleague's PR into your fork, run the review locally with section 6 instead                           |
-| The review approved or requested changes                | All three stops failed, which should be impossible                                    | Stop. Read the Actions log to find which command ran and why the rules and the guard let it. Fix that before another run       |
+| What you see                                            | What it is                                                                                                            | What to do                                                                                                                                                                         |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A `file:line` that doesn't say what the review claims   | The agent summarised from the diff and guessed the line                                                               | Check the row yourself; comment on the PR. If it keeps happening, add "quote the line" to the brief's Criteria check                                                               |
+| **not found** on a criterion that is plainly covered    | The test is at a seam the reviewer didn't look at, or the criterion is worded loosely                                 | The ticket's `Seams:` line should have led it there. If the wording is the problem, fix the ticket, as lesson 7 section 7 says                                                     |
+| A finding that cites a rule `AGENTS.md` doesn't contain | The brief drifted into general opinion                                                                                | Edit `reviewer.md`. The Standards check names the rules on purpose; keep it that way                                                                                               |
+| "No `Closes` reference found" as the first finding      | The PR body lacks `Closes #T`, so there is no ticket to review against                                                | Edit the PR body. Lesson 7's invocation asked for the line; the `pr` skill doesn't add it on its own                                                                               |
+| A refused command in the review text                    | The allow list is missing something the brief needs                                                                   | Add one narrow glob to `reviewer.json`. Never `--trust-all-tools`                                                                                                                  |
+| A comment saying the run produced no review             | The agent exited without writing `.ai-review/review.md`                                                               | Open the linked run log. Usually a refused command it kept retrying, or a write to the wrong path. Fix the brief or the allow list, then `gh workflow run ai-review.yml -f pr=<n>` |
+| The step logs "KIRO_API_KEY is not set" and exits 0     | The PR came from another fork, or the secret was never set                                                            | `gh secret list`. For a colleague's PR into your fork, run the review locally with section 6 instead                                                                               |
+| The review approved or requested changes                | The agent can't post, so the posting line in `ai-review.yml` changed, or a person posted the file with the wrong flag | Stop. `git log -p .github/workflows/ai-review.yml` finds the change. Put `--comment` back before another run                                                                       |
 
-The last row hasn't happened in our runs. It is in the table because the day it does, the fix is in the permission rules and the guard, and nothing else is worth doing first.
+The last row hasn't happened in our runs. It is in the table because the day it does, the fix is in the workflow file, the permission rules and the guard, and nothing else is worth doing first.
 
 ---
 
@@ -341,6 +367,7 @@ The last row hasn't happened in our runs. It is in the table because the day it 
 - `kiro-cli agent list` shows `reviewer` as a workspace agent in `(v3 format)`, next to `erp`.
 - `gh secret list` on your fork shows `KIRO_API_KEY`, and `git grep KIRO_API_KEY` finds it only in the workflow file as `${{ secrets.KIRO_API_KEY }}`.
 - The three guard tests in section 5 give `2`, `2`, `0`.
+- `git status --short` is clean after the section 6 run: `.ai-review/` is in `.gitignore`.
 - The lesson 7 PR has two `<!-- ai-review -->` reviews, one from you (section 6) and one from `github-actions` (section 7), both in comment state, neither approved.
 - `gh workflow list` shows `CI` and `AI review`. `gh run list --workflow ai-review.yml` shows one successful run.
 - `git log main -1` is the "Add the read-only AI reviewer agent" commit, and the lesson 7 ticket branch is unchanged.
@@ -351,8 +378,8 @@ The last row hasn't happened in our runs. It is in the table because the day it 
 ## Summary
 
 - **A cold reviewer finds different things.** It reads the ticket, the diff, the PR body and CI, with no memory of writing the code and no brief from the author. It can't run the demo, so its last line is advice for the person who will.
-- **Read-only is three things.** Permission rules in the agent file (`fs_write` denied, shell allow-listed, `ask` means deny in headless), the guard hook from lesson 5 with three new rules, and the brief. The brief is the weakest of the three.
-- **Never approve, never merge.** The review is posted with `--comment`. Approve, request changes and merge are a human's verdict, and lesson 7's rule stands: a human who isn't the author.
+- **Read-only is three things.** Permission rules in the agent file (`fs_write` allowed only under `.ai-review/`, shell allow-listed, `ask` means deny in headless), the guard hook from lesson 5 with three new rules, and the brief. The brief is the weakest of the three.
+- **Never approve, never merge.** The agent writes a file and can't post. The one line that posts it, in the workflow, says `--comment`. Approve, request changes and merge are a human's verdict, and lesson 7's rule stands: a human who isn't the author.
 - **Advisory, in its own workflow.** It never fails the PR, runs on every push and on demand, and skips cleanly when the key isn't there.
 - **The brief is yours.** When the review is wrong, edit `reviewer.md` or fix the ticket. Don't argue with the review in the PR thread and don't widen the permissions to make it go away.
 
@@ -362,7 +389,7 @@ The last row hasn't happened in our runs. It is in the table because the day it 
 
 Three extensions, none part of the session.
 
-**Inline comments.** `gh pr review --comment` posts one body. The reviews API accepts a `comments` array with a path and line per entry, which is how hosted reviewers put findings next to the code. It needs `gh api` in the allow list, which the deny list currently refuses for a reason: `gh api` can do anything the token can. Allow one exact path, `gh api repos/*/pulls/*/reviews *`, and nothing wider.
+**Inline comments.** `gh pr review --comment --body-file` posts one body. The reviews API accepts a `comments` array with a path and line per entry, which is how hosted reviewers put findings next to the code. Have the brief write a second file, `.ai-review/comments.json`, and add a `gh api repos/{owner}/{repo}/pulls/$PR_NUMBER/reviews --input` line to the posting step. Keep `gh api` out of the agent's allow list: it can do anything the token can, and the agent still never posts.
 
 **Run the demo in the job.** The one thing the reviewer can't do is the `Demo:` line, because there is no app. `ci.yml` could start Postgres as a service, run the migrations and seed, start the API, and the brief could then be allowed `curl http://localhost:3000/api/*`. Lesson 7 section 7's table has a row about exactly this. It roughly doubles the job and the lesson, which is why it is here and not above.
 
@@ -374,14 +401,14 @@ Three extensions, none part of the session.
 
 Both vendors ship an official GitHub Action, and both read the same `AGENTS.md` and can be given the same brief. The guard registration from lesson 5 Appendix A applies to each. Only the plumbing differs:
 
-| Step               | Kiro CLI                                           | Claude Code                                                                            | Codex                                                     |
-| ------------------ | -------------------------------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| Action             | Hand-rolled: install `kiro-cli`, run headless      | `anthropics/claude-code-action`                                                        | `openai/codex-action`                                     |
-| Secret             | `KIRO_API_KEY` (Pro and above)                     | `ANTHROPIC_API_KEY`                                                                    | `OPENAI_API_KEY`                                          |
-| The brief          | `.kiro/agents/reviewer.md`, via `--agent reviewer` | The action's `prompt` input, pointing at the same file, or a `.claude/agents` subagent | The action's `prompt` input, pointing at the same file    |
-| Read-only          | `permissions.rules` in the agent file              | `--allowedTools` and `--disallowedTools` in the action's arguments, plus the hook      | The action's sandbox and approval settings, plus the hook |
-| Headless `ask`     | Treated as deny                                    | Denied unless the tool is allow-listed                                                 | Depends on the configured approval policy                 |
-| Posting the review | `gh pr review --comment` from the agent            | The action can comment on the PR itself; keep it to comment state                      | `gh pr review --comment` from the agent                   |
+| Step               | Kiro CLI                                                           | Claude Code                                                                                              | Codex                                                     |
+| ------------------ | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Action             | Hand-rolled: install `kiro-cli`, run headless                      | `anthropics/claude-code-action`                                                                          | `openai/codex-action`                                     |
+| Secret             | `KIRO_API_KEY` (Pro and above)                                     | `ANTHROPIC_API_KEY`                                                                                      | `OPENAI_API_KEY`                                          |
+| The brief          | `.kiro/agents/reviewer.md`, via `--agent reviewer`                 | The action's `prompt` input, pointing at the same file, or a `.claude/agents` subagent                   | The action's `prompt` input, pointing at the same file    |
+| Read-only          | `permissions.rules` in the agent file                              | `--allowedTools` and `--disallowedTools` in the action's arguments, plus the hook                        | The action's sandbox and approval settings, plus the hook |
+| Headless `ask`     | Treated as deny                                                    | Denied unless the tool is allow-listed                                                                   | Depends on the configured approval policy                 |
+| Posting the review | The job posts `.ai-review/review.md` with `gh pr review --comment` | The action can comment on the PR itself; keep it to comment state, or keep the file and the posting step | The same posting step; the agent only writes the file     |
 
 Read each action's README before copying the table; both move quickly. The decisions don't: one brief in the repo, read-only tools, comment state only, a human merges.
 

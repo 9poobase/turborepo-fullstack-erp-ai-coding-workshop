@@ -1,7 +1,8 @@
 name: AI review
 
-# Advisory only. Posts one comment-state review on the pull request and never
-# fails the PR. The merge decision stays with a human. See lessons/08.
+# Advisory only. The reviewer agent writes one review to .ai-review/review.md
+# and the job posts it as a comment-state review. The job never fails the PR.
+# The merge decision stays with a human. See lessons/08.
 
 on:
   pull_request:
@@ -47,6 +48,7 @@ jobs:
         run: curl -fsSL https://cli.kiro.dev/install | bash
 
       - name: Review the pull request
+        id: review
         continue-on-error: true
         env:
           KIRO_API_KEY: ${{ secrets.KIRO_API_KEY }}
@@ -54,7 +56,23 @@ jobs:
         run: |
           if [ -z "$KIRO_API_KEY" ]; then
             echo "::notice::KIRO_API_KEY is not set; skipping the AI review (expected on pull requests from forks)."
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          mkdir -p /tmp/ai-review
-          kiro-cli chat --v3 --no-interactive --agent reviewer "Review pull request #${PR_NUMBER} and post the review."
+          mkdir -p .ai-review
+          kiro-cli chat --v3 --no-interactive --agent reviewer "Review pull request #${PR_NUMBER}."
+
+      # Posting is the job's step, not the agent's. The agent can only write the
+      # file. This is the one line that decides the review state, and it says
+      # --comment. If the agent wrote nothing, say so on the PR instead of staying silent.
+      - name: Post the review
+        if: steps.review.outputs.skipped != 'true'
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ ! -s .ai-review/review.md ]; then
+            echo "::warning::The reviewer did not write .ai-review/review.md; see the step above."
+            gh pr comment "$PR_NUMBER" --body "The AI review did not produce a review on this run. See the [run log](${RUN_URL})."
+            exit 0
+          fi
+          gh pr review "$PR_NUMBER" --comment --body-file .ai-review/review.md
