@@ -17,13 +17,23 @@ Lesson 4 ended with tickets. Lesson 7 hands one of them to an agent that will ru
 
 ![Left to right: you type a prompt; the agent decides on a tool call such as a shell command; before the command runs, the harness pipes the call to the guard script as JSON. If the script exits 0 the command runs and its output goes back to the agent. If it exits 2 the command never runs and the script's stderr goes back to the agent as the reason, and the agent asks you. A note at the bottom says CI checks the result after the push, while the hook checks the action before it runs.](images/hook-guard.svg)
 
-A **hook** is a shell command that the agent's harness runs at a fixed moment in the agent's turn: when a session starts, before a tool call, after a tool call, when the agent stops. The harness pipes a JSON description of the moment to the command's stdin, waits, and reads the exit code. For the moment this lesson cares about, **before a tool call**, the contract is the same in Kiro, Claude Code and Codex:
+A **hook** is a shell command that the agent's harness runs at a fixed moment in the agent's turn. The harness pipes a JSON description of the moment to the command's stdin, waits, and reads the exit code. There are more moments than the one this lesson uses:
+
+![A timeline of one session, left to right: the session starts, you type a prompt, the agent picks a tool call, the tool runs and its result comes back, the agent finishes its turn, the session ends. A loop arrow shows the agent making many tool calls per turn. Under each moment is the hook event that fires there: SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, Stop, SessionEnd. Only PreToolUse is highlighted as able to refuse the action in all three tools. The others add context, see a result that already happened, or send the agent back to work. A note says every event gets JSON on stdin and answers with an exit code, but only PreToolUse sits before the action.](images/hook-events.svg)
+
+Current releases of Kiro, Claude Code and Codex use the same PascalCase names for these moments; Kiro's older 2.x format spelled them in camelCase and called the first one `agentSpawn`, which section 5 comes back to. Most of them can only watch. `SessionStart` adds text to the window, `PostToolUse` sees a result that already happened, `Stop` can send the agent back to work. **Before a tool call** is the one moment where a script can still say no, and that is the only hook this lesson registers. For that moment, `PreToolUse`, the contract is the same in all three tools:
 
 | Exit code     | What the harness does                                                                    |
 | ------------- | ---------------------------------------------------------------------------------------- |
 | `0`           | Runs the tool call as planned.                                                           |
 | `2`           | Does not run it. Whatever the hook wrote to stderr goes back to the agent as the reason. |
 | anything else | Runs it anyway and shows the stderr as a warning. A broken hook fails open, not closed.  |
+
+Add the state lesson 3 left you in, hooks switched off, and the guard is always in one of four states:
+
+![Four columns. Off: hooks are disabled or the hook is not registered, the script never runs, the reset runs, the agent sees its output, you see nothing special; this is where lesson 3 left you. Allows: the script exits 0 because no rule matched, the command runs, the agent sees its output, you see nothing because the hook is silent; the example is a migration. Refuses: a rule matched, the script writes one sentence to stderr and exits 2, the command never runs, the agent sees the sentence as the tool's error, you see the agent report the block and ask you. Broken: the script crashes, exits 1 or times out, the command runs anyway, the agent sees its output, you see the stderr as a warning; a broken hook fails open. A note at the bottom says the check in section 6 tells the states apart.](images/hook-states.svg)
+
+Two of the four look the same from the agent's side: in **Off** and in **Broken** the reset runs. Only the warning on your screen tells them apart, which is why section 4 has you run the script by hand before any agent does, and why section 6 ends with a reset request that should be refused.
 
 The thing to notice is what a hook is not. It is not a model, not a prompt, and not an instruction the agent reads. It is a program, and it runs every time, whether or not the agent remembers the rule, whether the window is fresh or 150k tokens deep. Lesson 2's list of levers ended with "prefer deterministic checks". `AGENTS.md` says "never reset the database"; an agent in the dumb zone reads that line at the start and forgets it by the time it decides that a reset would "fix" a migration conflict. A hook doesn't forget.
 
