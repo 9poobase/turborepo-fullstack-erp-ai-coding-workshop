@@ -66,6 +66,16 @@ gh workflow list                                     # expect: CI
 
 An empty list means the button wasn't pressed. Without it, the "CI green" step later in the loop never happens.
 
+While you are here, read the workflow that `CI` names. It is one job, and it has been in the repository since the first commit:
+
+```bash
+cat .github/workflows/ci.yml
+```
+
+It runs on every pull request and on every push to `main`. The job installs with `--frozen-lockfile`, so a lockfile the agent forgot to commit fails here instead of on someone else's machine. Then `pnpm format:check`, then `pnpm turbo run lint typecheck test build`: the same four tasks as `pnpm check`, plus Prettier, on a clean Ubuntu runner with the Node version from `.nvmrc`. No database is started; the api specs stub Prisma, so the job is green in under a minute on a fresh fork. Everything the agent is told to run before its last commit, this job runs again without the agent.
+
+One thing to notice: the trigger is `pull_request`, with no branch filter, so it fires for whichever repository the PR is opened on. That is the second reason `gh repo set-default` above must point at your fork. A PR opened against the workshop repository by mistake still gets a CI run, but on VaridenTech's Actions tab, not yours, and `gh pr checks` in section 5 won't find it.
+
 **Install one more skill.** The agent is going to write the pull request body, and the `pr` skill gives it a template a reviewer can use: Summary, Evidence with before and after, Merge Danger. Same installer as lesson 4:
 
 ```bash
@@ -192,7 +202,7 @@ gh pr checks --watch                                 # CI, in another terminal
 
 **Tick the boxes.** On the ticket on github.com, tick each criterion you have seen proven. The agent didn't, because you told it not to. This is the record that a human looked.
 
-**Wait for CI.** It runs `pnpm format:check`, lint, typecheck, test and build, the same as `pnpm check`. If it is red, paste the failing step's output into the **same** Kiro session, let the agent fix and push, and watch again. Only when the check is green do you `/clear`.
+**Wait for CI.** It is the workflow you read in section 2: `pnpm format:check`, then lint, typecheck, test and build, the same as `pnpm check`, on a runner that has none of your local state. If it is red, paste the failing step's output into the **same** Kiro session, let the agent fix and push, and watch again. Only when the check is green do you `/clear`.
 
 Why this step is not optional: the moment this PR merges, every ticket blocked by `#16` becomes available, and the next run builds on whatever `#16` left behind. An unproven ticket that closes doesn't just leave a bug. It opens the gate for every ticket behind it.
 
@@ -240,6 +250,7 @@ Two things in the skills collection run this loop without you, and both would me
 ## 9. Check that it worked
 
 - `gh pr list` shows one open pull request on **your fork**, from `ticket/16-...` into `main`, with `Closes #16` in the body and a green check.
+- `gh pr checks` lists one passing check named `check`, from the `CI` workflow, triggered by `pull_request` on your fork. Its log on the Actions tab shows the format step and then lint, typecheck, test and build. If `gh pr checks` says there are no checks, Actions is off or the PR is on the wrong repository; see section 2.
 - `gh issue view 16` shows the ticket still **open**, with its acceptance criteria ticked.
 - `git log main -1` is the "Install the pr skill" commit, and `main` has none of the ticket's changes.
 - The frontier query from section 3 still prints only `#16`.
