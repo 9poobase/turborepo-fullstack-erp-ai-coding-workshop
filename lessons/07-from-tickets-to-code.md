@@ -29,7 +29,7 @@ The skill that does the building is `implement`, installed in lesson 4. Open `.k
 
 Read what it does **not** say. It does not create a branch. It does not open a pull request. It does not close the ticket, tick its boxes, or move anything on the board. It does not look for the next ticket. Matt Pocock's own page on the skill says it "never touches the work item". Everything outside those seven lines is the loop, and the loop is your job: find the frontier, make the branch, start the run, prove the result, and clear.
 
-One more file sits next to it: `.agents/skills/implement-ticket/SKILL.md`, this repository's own. It calls `implement` with the ticket and adds the six rules the loop needs that the skill doesn't carry: commit first and review against `main`, push and open the pull request, never touch the ticket. Section 4 reads it line by line. What you type is `/implement-ticket #16`, and every ticket on the board gets the same rules.
+One more file sits next to it: `.agents/skills/implement-ticket/SKILL.md`, this repository's own. It calls `implement` with the ticket and adds the six rules the loop needs that the skill doesn't carry: commit first and review against `main`, push and open the pull request, never touch the ticket. Section 4 reads it line by line. What you type is `/implement-ticket` followed by the ticket's number, `/implement-ticket #16` in our run, and every ticket on the board gets the same rules.
 
 One more thing it doesn't do: merge. A ticket closes when its pull request merges, and until it closes, every ticket it blocks stays blocked. In this lesson nothing merges. By the end of the run the code has been reviewed by two sub-agents, by you, and by CI, but not by a human who isn't you, and that is the rule for the merge. The loop pauses at the PR, on purpose.
 
@@ -116,11 +116,11 @@ The second command walks the spec's sub-issues and keeps the ones that are open 
 #16  Roles & user-to-store assignment (foundation)
 ```
 
-Yours will have different numbers and possibly a different first ticket. Whatever it prints is what you implement. If it prints nothing, no ticket is unblocked, which means the edges from lesson 4 form a cycle; fix the tickets before going on. If it prints more than one, any of them is fine. Pick the smallest.
+Yours will print different numbers and possibly a different first ticket. Whatever it prints is what you implement. If it prints nothing, no ticket is unblocked, which means the edges from lesson 4 form a cycle; fix the tickets before going on. If it prints more than one, any of them is fine. Pick the smallest.
 
 Open the spec on github.com as well. The sub-issue list has a progress bar at zero. That bar, and this query, are the board.
 
-The rest of this lesson uses `#16` and `#15`. Substitute your numbers.
+> **Your numbers are not ours.** GitHub numbers issues and pull requests per repository, in the order they were created. Your fork started its own count, and lesson 4 created the spec and tickets in whatever order the agent wrote them, so your spec and first ticket have different numbers from `#15` and `#16`, and from your neighbour's. Write both down now. Every command in the rest of this lesson uses the numbers from our run so that it reads as a real command. Wherever it says `#16`, in the invocation, the branch name, `gh issue view` and `Closes #16`, type your first ticket's number. Wherever it says `#15`, type your spec's number.
 
 ---
 
@@ -129,7 +129,7 @@ The rest of this lesson uses `#16` and `#15`. Substitute your numbers.
 Read the ticket first, the way you'd read it before handing it to a colleague:
 
 ```bash
-gh issue view 16
+gh issue view 16                                     # your ticket number
 ```
 
 Check it has `Covers:`, `Demo:` and `Seams:` lines and that every criterion fails against today's code. If something is wrong, section 7 says what to do, and you do it **before** the run, not during. In our run `#16` replaced the two-value `ADMIN|STAFF` role enum with the TOR's four roles, gave each user an assigned store, extended the guard so routes can require a role, and seeded the TOR's test users. Seams S1 and S2, no Postgres tests. A good first ticket: every layer, small, and the gate for everything else.
@@ -137,7 +137,7 @@ Check it has `Covers:`, `Demo:` and `Seams:` lines and that every criterion fail
 ### Make the branch yourself
 
 ```bash
-git switch -c ticket/16-roles-and-stores
+git switch -c ticket/16-roles-and-stores            # your ticket number, then a slug from its title
 ```
 
 The skill commits to whatever branch it finds itself on and never creates one. One shell command is more reliable than asking the agent to remember.
@@ -148,7 +148,7 @@ In Kiro CLI, `/clear` if the session has anything in it, then `/context show`. Y
 
 ### The invocation
 
-The skill fetches the ticket and states its title, so `/implement #16` on its own would run. It would also review before committing, stop at the commit, and ask you about seams without telling you where to look. So, like lesson 4 did with `to-tickets`, the invocation has to carry the repository's rules. Lesson 4 pasted them as a block under the command, once. This loop runs once per ticket, so the block is a skill of its own, committed in the repository, and the invocation is one line:
+The skill fetches the ticket and states its title, so `/implement #16` on its own would run. It would also review before committing, stop at the commit, and ask you about seams without telling you where to look. So, like lesson 4 did with `to-tickets`, the invocation has to carry the repository's rules. Lesson 4 pasted them as a block under the command, once. This loop runs once per ticket, so the block is a skill of its own, committed in the repository, and the invocation is one line, with your ticket number after it:
 
 ```
 /implement-ticket #16
@@ -223,7 +223,7 @@ Run the frontier query from section 3 again. It prints the same line:
 #16  Roles & user-to-store assignment (foundation)
 ```
 
-The PR is open, the ticket is open, the progress bar on the spec is still at zero, and `#17` onwards still show one open blocker. That is correct. A ticket closes when its PR merges, and merging is the one step this lesson doesn't do. The rule is that a human who isn't the author reads the pull request before it merges. In the workshop that is a colleague, after the session, with the PR body's Evidence section as their script. Lesson 8 puts an AI reviewer on that PR before the colleague opens it. When that review passes and the PR merges, `#16` closes, the gate opens, and the next turn of the loop starts with the same query returning a different ticket.
+The PR is open, the ticket is open, the progress bar on the spec is still at zero, and the tickets it blocks still show one open blocker. That is correct. A ticket closes when its PR merges, and merging is the one step this lesson doesn't do. The rule is that a human who isn't the author reads the pull request before it merges. In the workshop that is a colleague, after the session, with the PR body's Evidence section as their script. Lesson 8 puts an AI reviewer on that PR before the colleague opens it. When that review passes and the PR merges, `#16` closes, the gate opens, and the next turn of the loop starts with the same query returning a different ticket.
 
 Nothing to do between now and then. Leave the PR open and the branch pushed.
 
@@ -255,6 +255,8 @@ Two things in the skills collection run this loop without you, and both would me
 ---
 
 ## 9. Check that it worked
+
+Read `16` below as your ticket number.
 
 - `gh pr list` shows one open pull request on **your fork**, from `ticket/16-...` into `main`, with `Closes #16` in the body and a green check.
 - `gh pr checks` lists one passing check named `check`, from the `CI` workflow, triggered by `pull_request` on your fork. Its log on the Actions tab shows the format step and then lint, typecheck, test and build. If `gh pr checks` says there are no checks, Actions is off or the PR is on the wrong repository; see section 2.
