@@ -27,6 +27,8 @@ Three consequences follow, and all three show up in the next lesson:
 - **The report is all that comes back.** If the subagent learned something and didn't write it in the report, it is gone when its window closes. A good subagent brief says what the report must contain and how long it may be.
 - **The main window stays small.** A subagent can read twenty files and return three sentences, and only the three sentences count against the main agent's budget. This is the lever lesson 2 named.
 
+One main agent can start more than one subagent, and often does: it writes several briefs, sends them out together, and collects each report as it arrives. The subagents don't see each other any more than they see the main chat. Section 3 shows the case you will meet first, and the diagram there draws it.
+
 Subagents are not free. Each one pays the fixed cost from lesson 2 again, and each one starts cold. They pay off when the work produces a lot of tokens the main agent doesn't need to keep, or when two pieces of work would contaminate each other if done in one window.
 
 ---
@@ -51,6 +53,8 @@ The main agent, the one that wrote the code, does the preparation. It resolves t
 | ------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Standards** | The diff, the list of standards files, and a baseline list of code smells pasted in full | Every place the diff breaks a documented standard, citing the rule, plus any smell, quoting the hunk. Under 400 words.                                 |
 | **Spec**      | The diff and the spec, as a path or its contents                                         | Requirements that are missing or partial, behaviour nobody asked for, and requirements that look done but wrong. Quote the spec line. Under 400 words. |
+
+![A main context window on the left sends three briefs at the same time to three subagent windows on the right: a Standards reviewer, a Spec reviewer, and a third subagent standing for any other job. Each subagent works in its own window and sends back one short report. The main window ends up with the three reports and nothing else. A note says the subagents never see each other and that each one pays the fixed cost again.](images/subagent-fan-out.svg)
 
 The main agent prints the two reports side by side and does not merge them. The skill's note on "why two axes" is the point: code can follow every standard and implement the wrong thing, or do exactly what the issue asked and break every convention. One reviewer asked both questions at once tends to answer the easier one.
 
