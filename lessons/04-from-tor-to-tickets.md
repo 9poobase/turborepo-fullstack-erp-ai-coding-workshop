@@ -138,7 +138,7 @@ Before you go on, check that the install and the setup both left files behind:
 git status --short      # expect: .kiro/skills/ (six new folders), skills-lock.json, docs/agents/, AGENTS.md
 ```
 
-All of it is untracked at this point. Section 8 commits it. If that commit is skipped, the next lesson's `/implement #n` opens in a repository with no tracker configuration and no `implement` skill, and the first ten minutes go to redoing this section.
+All of it is untracked at this point. Section 8 commits it. If that commit is skipped, the next lesson's `/implement-ticket #n` opens in a repository with no tracker configuration and no `implement` skill, and the first ten minutes go to redoing this section.
 
 ---
 

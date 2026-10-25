@@ -15,7 +15,7 @@ Lesson 4 ended with a spec and 15 to 25 tickets on your fork, each a vertical sl
 
 ## 1. The loop, and why a human is in it
 
-![The implement loop as a cycle of eight steps. Top row, left to right: query the frontier, the open tickets with no open blockers; create a branch by hand; run /implement with the ticket number in a fresh window, where the agent confirms seams, does red-green TDD, reviews and commits; the agent pushes and opens a pull request. Bottom row, right to left: you do the demo line, read the diff against the criteria, tick the boxes and wait for CI; merge, greyed and marked after class, after a reviewer who is not the author has looked; the ticket closes and the dependency gate opens, also greyed; clear the conversation. An arrow runs from clear back to the frontier query. A note in the middle says: state lives in git and on GitHub, never in the conversation.](images/implement-loop.svg)
+![The implement loop as a cycle of eight steps. Top row, left to right: query the frontier, the open tickets with no open blockers; create a branch by hand; run /implement-ticket with the ticket number in a fresh window, where the agent confirms seams, does red-green TDD, reviews and commits; the agent pushes and opens a pull request. Bottom row, right to left: you do the demo line, read the diff against the criteria, tick the boxes and wait for CI; merge, greyed and marked after class, after a reviewer who is not the author has looked; the ticket closes and the dependency gate opens, also greyed; clear the conversation. An arrow runs from clear back to the frontier query. A note in the middle says: state lives in git and on GitHub, never in the conversation.](images/implement-loop.svg)
 
 Lesson 2 made the case: an agent that has read the TOR, explored the codebase and built two features is deep in the dumb zone before the third one starts. So every ticket gets a fresh window, and nothing the agent needs may live only in a previous conversation. That is why lesson 4 put the decisions in a spec issue, the work in tickets, and the order in dependency edges. The conversation is disposable. Git and GitHub are the state.
 
@@ -29,6 +29,8 @@ The skill that does the building is `implement`, installed in lesson 4. Open `.k
 
 Read what it does **not** say. It does not create a branch. It does not open a pull request. It does not close the ticket, tick its boxes, or move anything on the board. It does not look for the next ticket. Matt Pocock's own page on the skill says it "never touches the work item". Everything outside those seven lines is the loop, and the loop is your job: find the frontier, make the branch, start the run, prove the result, and clear.
 
+One more file sits next to it: `.agents/skills/implement-ticket/SKILL.md`, this repository's own. It calls `implement` with the ticket and adds the six rules the loop needs that the skill doesn't carry: commit first and review against `main`, push and open the pull request, never touch the ticket. Section 4 reads it line by line. What you type is `/implement-ticket #16`, and every ticket on the board gets the same rules.
+
 One more thing it doesn't do: merge. A ticket closes when its pull request merges, and until it closes, every ticket it blocks stays blocked. In this lesson nothing merges. By the end of the run the code has been reviewed by two sub-agents, by you, and by CI, but not by a human who isn't you, and that is the rule for the merge. The loop pauses at the PR, on purpose.
 
 ---
@@ -40,7 +42,7 @@ You need your fork from lesson 4, on `main`, with the lesson 4 commit on it:
 ```bash
 git switch main && git pull
 git status --short                                   # expect: nothing
-ls .kiro/skills                                      # expect: implement, tdd, code-review among them
+ls .kiro/skills                                      # expect: implement, tdd, code-review, implement-ticket among them
 cat docs/agents/issue-tracker.md | head -5           # the tracker config from lesson 4
 grep -rl agent-guard .kiro                           # expect: the file lesson 5 registered the guard in
 ```
@@ -146,21 +148,24 @@ In Kiro CLI, `/clear` if the session has anything in it, then `/context show`. Y
 
 ### The invocation
 
-The skill fetches the ticket and states its title, so `/implement #16` on its own would run. It would also review before committing, stop at the commit, and ask you about seams without telling you where to look. So, like lesson 4 did with `to-tickets`, the invocation carries the repository's rules. Paste the whole block, with your ticket number:
+The skill fetches the ticket and states its title, so `/implement #16` on its own would run. It would also review before committing, stop at the commit, and ask you about seams without telling you where to look. So, like lesson 4 did with `to-tickets`, the invocation has to carry the repository's rules. Lesson 4 pasted them as a block under the command, once. This loop runs once per ticket, so the block is a skill of its own, committed in the repository, and the invocation is one line:
 
 ```
-/implement #16
+/implement-ticket #16
+```
 
-For this repository, on top of the skill:
-- Stay on the current branch. Commit as you go, with the ticket number in every message.
-- Before the first test, show me the seams you will test at and wait for my yes.
+Open `.agents/skills/implement-ticket/SKILL.md`. After the frontmatter it says: take the ticket reference the user typed after the command, call the `implement` skill with it, and then apply these rules on top:
+
+```
+- Stay on the current branch. Commit as you go, with `#N` in every message.
+- Before the first test, show the seams you will test at and wait for the user's yes.
 - `pnpm check` and `pnpm format` must pass before the last commit.
-- Review after committing, not before: run code-review with `main` as the fixed point, fix what it finds, commit again.
-- Then push the branch and open a pull request against `main` with `Closes #16` in the body. Use the pr skill for the body.
+- Review after committing, not before: run `code-review` with `main` as the fixed point, fix what it finds, commit again.
+- Then push the branch and open a pull request against `main` with `Closes #N` in the body. Use the `pr` skill for the body.
 - Don't close the ticket or tick its boxes. The pull request does that when it merges.
 ```
 
-Each line is there for a reason:
+`#N` is whatever you typed. All three tools hand it over: Claude Code and Kiro append the text after the command to the skill, and in Codex it stays in your message next to the `$implement-ticket` mention. Each line is there for a reason:
 
 | Line                             | Why                                                                                                                                                                                                                                                                                 |
 | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -170,6 +175,8 @@ Each line is there for a reason:
 | Review after committing          | A known bug across the two skills: `code-review` diffs committed history against a fixed point, and `implement` calls it before committing, so the review often sees an empty diff and reports nothing. Committing first and reviewing against `main` is the documented workaround. |
 | Push and open a PR, `Closes #16` | The skill stops at the commit. The PR is how the ticket will close, and `Closes #16` is what makes the merge close it. The `pr` skill gives the body a shape a reviewer who wasn't in the room can read.                                                                            |
 | Don't close or tick              | The agent proving its own work is the thing the loop is designed not to trust. Closing is the merge's job. Ticking is yours, in section 5.                                                                                                                                          |
+
+The rules are a file for the reason lesson 2 gave: one kind of task, done many times, the same for everyone. When a run shows you a seventh rule, edit the file, commit it on `main`, and the next turn has it, the way lesson 5 said to add a guard rule. It is laid out like the repository's other skills: the real file in `.agents/skills/`, which Codex reads directly, and symlinks from `.claude/skills/` and `.kiro/skills/`, so one edit reaches all three tools. The frontmatter marks it as user-invoked only (`disable-model-invocation: true`, and `allow_implicit_invocation: false` in `agents/openai.yaml` for Codex), so no agent starts a ticket because a prompt happened to sound like one.
 
 ### What you'll see
 
@@ -181,7 +188,7 @@ The run has a shape, and it is worth watching for it:
 4. **A commit, then the review.** Two sub-agents report under `## Standards` and `## Spec`. Lesson 6 explained what they are: two fresh windows that never saw the code being written, each given the diff and one question. It fixes what they found and commits again. Watch how little of their work reaches your window: a short report each, not the files they read.
 5. **A push and a pull request.** The run ends with a URL. That is the hand-off.
 
-Expect the run to take 20 to 40 minutes and well over 100k tokens. That is normal for a ticket of this size. Don't `/compact` in the middle: the agent would lose the seams it agreed and the slices it has done. If the window fills before the PR exists, have it commit whatever is green, `/clear`, and start again with the same block plus one line: "The branch already has partial work. Read the commits first."
+Expect the run to take 20 to 40 minutes and well over 100k tokens. That is normal for a ticket of this size. Don't `/compact` in the middle: the agent would lose the seams it agreed and the slices it has done. If the window fills before the PR exists, have it commit whatever is green, `/clear`, and run `/implement-ticket #16` again with one line under it: "The branch already has partial work. Read the commits first."
 
 While it works, stay with it. It will ask about seams once, and it may ask about an ambiguity in the ticket. Answer the first from the ticket. For the second, fix the ticket and restart; section 7 explains why.
 
@@ -256,7 +263,7 @@ Two things in the skills collection run this loop without you, and both would me
 - The frontier query from section 3 still prints only `#16`.
 - The PR body has Summary, Evidence and Merge Danger sections, and the Evidence section tells a reviewer how to reproduce the demo.
 - `git log ticket/16-... --oneline` shows several commits, each mentioning `#16`, with at least one after the review.
-- Kiro's `/context show` in a fresh session lists `pr` next to `implement`, `tdd` and `code-review`.
+- Kiro's `/context show` in a fresh session lists `pr` and `implement-ticket` next to `implement`, `tdd` and `code-review`.
 
 ---
 
@@ -264,7 +271,7 @@ Two things in the skills collection run this loop without you, and both would me
 
 - **One ticket, one fresh window.** The conversation is disposable. The spec, the tickets, the edges, the branch and the PR are the state, and anything that only exists in a chat is lost at `/clear`.
 - **The `implement` skill is seven lines.** Fetch, name, `tdd` at agreed seams, check, review, commit. It doesn't branch, doesn't open a PR, doesn't close or tick anything. The loop around it does, and the loop is yours.
-- **The invocation carries the repository's rules**, the same way lesson 4's did: commit before reviewing, review against `main`, push and open a PR, never touch the ticket.
+- **The repository's rules ride in `implement-ticket`**, the block lesson 4 pasted, now a committed skill: commit before reviewing, review against `main`, push and open a PR, never touch the ticket. One line per ticket, one edit to change the rules for everyone.
 - **Your turn is the demo.** The `Demo:` line, the diff against the criteria, the boxes, CI. An unproven ticket that closes opens the gate for everything behind it.
 - **When the ticket is wrong, fix the ticket.** Stop, edit the issue, `/clear`, start again. The implementing agent never reinterprets.
 - **Nothing merged.** The loop pauses at the PR. Two sub-agents, you and CI have reviewed it; a human who isn't the author hasn't. When they have, the merge, the closed ticket and the moving frontier follow.
@@ -289,14 +296,14 @@ Then finish the turn. Swap pull requests with a colleague, review theirs from th
 
 The skills are the same files. The loop is the same. Only the commands around it change.
 
-| Step             | Kiro CLI                                                            | Claude Code                                                                  | Codex                                                                |
-| ---------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| Install `pr`     | `npx skills@latest add mattpocock/skills --skill pr`, pick Kiro CLI | Same command, pick Claude Code. Commit `.agents/skills` and `.claude/skills` | Same command, pick Codex. Commit `.agents/skills`                    |
-| Fresh window     | `/clear`, then `/context show`                                      | `/clear`, then `/context`                                                    | `/new`, then `/status`                                               |
-| Invoke           | `/implement #16` plus the block                                     | `/implement #16` plus the block                                              | `$implement #16` plus the block, or "use the implement skill on #16" |
-| Seams prompt     | Answer in the chat                                                  | Answer in the chat                                                           | Answer in the chat                                                   |
-| Fix a red CI     | Paste the failing step into the same session                        | Same                                                                         | Same                                                                 |
-| Headless (later) | `kiro-cli chat --no-interactive --trust-all-tools "..."`            | `claude -p "/implement #16 ..."`                                             | `codex exec "..."`                                                   |
+| Step             | Kiro CLI                                                            | Claude Code                                                                  | Codex                                                               |
+| ---------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Install `pr`     | `npx skills@latest add mattpocock/skills --skill pr`, pick Kiro CLI | Same command, pick Claude Code. Commit `.agents/skills` and `.claude/skills` | Same command, pick Codex. Commit `.agents/skills`                   |
+| Fresh window     | `/clear`, then `/context show`                                      | `/clear`, then `/context`                                                    | `/new`, then `/status`                                              |
+| Invoke           | `/implement-ticket #16`                                             | `/implement-ticket #16`                                                      | `$implement-ticket #16`, or "use the implement-ticket skill on #16" |
+| Seams prompt     | Answer in the chat                                                  | Answer in the chat                                                           | Answer in the chat                                                  |
+| Fix a red CI     | Paste the failing step into the same session                        | Same                                                                         | Same                                                                |
+| Headless (later) | `kiro-cli chat --no-interactive --trust-all-tools "..."`            | `claude -p "/implement-ticket #16"`                                          | `codex exec "..."`                                                  |
 
 ---
 
