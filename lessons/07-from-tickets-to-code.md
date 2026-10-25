@@ -42,7 +42,7 @@ git switch main && git pull
 git status --short                                   # expect: nothing
 ls .kiro/skills                                      # expect: implement, tdd, code-review among them
 cat docs/agents/issue-tracker.md | head -5           # the tracker config from lesson 4
-ls .kiro/hooks                                       # expect: the guard hook from lesson 5
+grep -rl agent-guard .kiro                           # expect: the file lesson 5 registered the guard in
 ```
 
 If any of those is missing, lesson 4 section 8 or lesson 5 was skipped. Do it now.

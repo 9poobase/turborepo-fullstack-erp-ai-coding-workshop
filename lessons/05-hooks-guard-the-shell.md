@@ -91,6 +91,8 @@ kiro-cli update
 kiro-cli --version
 ```
 
+Verified on `kiro-cli 2.34.0`: `kiro-cli --version` prints the version and `kiro-cli update` updates the CLI, both as shown. On that build the agent engine selected by `kiro-cli chat` is V2 by default; V3 is opt-in with `--v3` (or `--agent-engine v3`). But `--no-interactive` runs reach the V3 agent server, and `kiro-cli agent list` reports a hooks-bearing agent file as `(v3 format)`, so the registration below is read with the V3 schema even on a 2.34.0 binary. The format the agent writes, not the binary's version number, is what the check in section 6 confirms.
+
 Then, like lesson 3, don't hand-write the registration. The format differs per tool and moves between versions, so have each tool consult its own documentation. One prompt, in Kiro CLI in the repository root, or in whichever tool you use:
 
 ```markdown
@@ -129,7 +131,7 @@ Kiro keeps hooks on the custom agent, which in this repository is the `erp` agen
 }
 ```
 
-Kiro's documentation describes this array as the V3 format and the older 2.x form as "an object keyed by camelCase event names such as `agentSpawn`, `preToolUse`, and `postToolUse`", which V3 "still recognizes as compatibility input". If your agent wrote the object form instead, it is on the 2.x engine, and the object form is what that engine reads. Either way the check in section 6 is what counts, not the shape of the file. V3 also accepts standalone files in `.kiro/hooks/`, and `/upgrade-agent` converts an old agent file to the new shape.
+Kiro's documentation describes this array as the V3 format and the older 2.x form as "an object keyed by camelCase event names such as `agentSpawn`, `preToolUse`, and `postToolUse`", which V3 "still recognizes as compatibility input". In our run on `kiro-cli 2.34.0` the agent wrote the array form above and `kiro-cli agent validate --path .kiro/agents/erp.json` accepted it, and `kiro-cli agent list` reported the `erp` agent as `(v3 format)`: the engine reads this file with the V3 schema even though the binary is a 2.x version. If your agent wrote the object form instead, it is on the older engine, and the object form is what that engine reads. Either way the check in section 6 is what counts, not the shape of the file. V3 also accepts standalone files in `.kiro/hooks/`, and `/upgrade-agent` converts an old agent file to the new shape.
 
 The matcher names Kiro's shell tool. `execute_bash` is the tool ID the matcher sees; the tool is also called `shell` in the built-in tools list. Without a matcher the hook runs on every tool call, which the script tolerates but which costs a process start per file read.
 
@@ -155,7 +157,7 @@ Run the migrations with pnpm db:migrate.
 
 Expect it to run. The guard refuses resets, not migrations, and lesson 7's first ticket needs one.
 
-Finally, `git status --short` should show one changed file, the registration, and nothing else. Commit it on `main` before lesson 7 branches:
+Finally, `git status --short` should show one new or changed file, the registration, and nothing else. On a fresh clone `.kiro/agents/` is not yet tracked, so the file shows as untracked (`?? .kiro/agents/`) rather than modified; once it is committed, later edits show as modified. Commit it on `main` before lesson 7 branches:
 
 ```bash
 git add .kiro/agents/erp.json           # or .claude/settings.json, .codex/hooks.json and .codex/config.toml

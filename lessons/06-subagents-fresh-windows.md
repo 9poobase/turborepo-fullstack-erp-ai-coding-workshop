@@ -88,7 +88,7 @@ Skills are an open format: the same `SKILL.md` folder works in every tool. Subag
 | Own tools and model            | Own tool list and permissions, from the agent file                                               | Own tool list and model, from the front matter                     | Own model and reasoning settings; tools can be narrowed, not fully chosen |
 | Switch them off                | Exclude the `subagent` tool from the agent, or list `availableAgents`                            | Deny the agent-launching tool in permissions                       | `agents.enabled = false`                                                  |
 
-Two details matter for this course. In Kiro, the general-purpose subagent runs "using the default agent configuration", and lesson 3's workspace settings make `erp` the default, so a subagent gets the same built-in tools and the same guard hook as the main session. And the `code-review` skill's two reviewers work in all three tools, because they run in the foreground and only need a fresh window. It is only `implement-spec`'s implementers, which need background runs and separate checkouts, that today work as designed in one tool.
+Two details matter for this course. In Kiro, the general-purpose subagent runs "using the default agent configuration", and lesson 3's workspace settings make `erp` the default, so a subagent gets the same built-in tools and the same guard hook as the main session. We confirmed this: asked to "use a subagent to run `pnpm db:reset`", Kiro spawned a subagent, and the guard from lesson 5 blocked the reset inside it exactly as it does in the main window. And the `code-review` skill's two reviewers work in all three tools, because they run in the foreground and only need a fresh window. It is only `implement-spec`'s implementers, which need background runs and separate checkouts, that today work as designed in one tool.
 
 ---
 
@@ -112,7 +112,7 @@ Use a subagent to explain how login works end to end in this repo, from the form
 
 Run `/context` again. The main window grew by roughly the ten sentences, not by the files the subagent read. Now ask the same question without the word "subagent" and compare.
 
-In Kiro CLI, Kiro decides when to use its context-gathering subagent and you don't invoke it by name, so the comparison is less clean. Ask the same question, then `/context show`, and see whether the files it read ended up in your window or not.
+In Kiro CLI, Kiro decides when to use its context-gathering subagent and you don't invoke it by name, so the comparison is less clean. Ask the same question, then `/context show`, and see whether the files it read ended up in your window or not. In our run on `kiro-cli 2.34.0`, Kiro answered this question in the main window: it ran its own grep and file reads rather than delegating, so the files it read did count against the main window. Kiro delegates when it judges a task worth a fresh window, not on every exploration; when you ask it explicitly to "use a subagent", it does spawn one.
 
 ---
 
