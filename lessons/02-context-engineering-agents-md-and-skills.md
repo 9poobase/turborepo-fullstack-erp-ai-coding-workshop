@@ -192,7 +192,7 @@ Instruction files are the lever this lesson is about, but the dumb zone theory p
 
 - **Start fresh between tasks.** `/clear` in Claude Code throws away the conversation and keeps the fixed cost. A new task rarely benefits from the previous task's build logs.
 - **Compact on purpose.** Before the window fills, have the agent write what it has learned into a short plan or progress file, then clear and continue from that file. HumanLayer calls this "intentional compaction". A good commit message is a form of it.
-- **Delegate exploration.** Searching a codebase produces a lot of low-value tokens. A sub-agent can read twenty files and return three sentences, and only the three sentences enter your window.
+- **Delegate exploration.** Searching a codebase produces a lot of low-value tokens. A sub-agent can read twenty files and return three sentences, and only the three sentences enter your window. Lesson 6 is about this.
 - **Keep tool output terse.** `pnpm check` with `--filter=@erp/api` produces a fraction of the log of a full run. Turborepo's cache does the same for packages you did not touch.
 - **Prefer deterministic checks.** A type error from the shared contract is a few lines the agent can act on. "Look through the code for mismatches" is an open-ended search that fills the window with files.
 - **Count your tools.** Every MCP server loads all of its tool definitions at startup. Five servers can cost more than every instruction file in this repository combined.
