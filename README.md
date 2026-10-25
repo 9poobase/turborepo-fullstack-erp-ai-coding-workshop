@@ -119,14 +119,15 @@ See [AGENTS.md](AGENTS.md) for the repo conventions and `apps/api/AGENTS.md` / `
 
 ## 5. Troubleshooting
 
-| Problem                                  | Fix                                                                                                               |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `port is already allocated`              | Something else uses the port. Copy `.env.example` to `.env` and change `WEB_PORT` / `API_PORT` / `POSTGRES_PORT`. |
-| Changes are not picked up                | Windows: make sure the repo is inside WSL, not under `/mnt/c`. Then `docker compose restart api web`.             |
-| Editor shows red squiggles everywhere    | `node_modules` is missing: `docker compose run --rm install`, then restart the TS server in your editor.          |
-| Weird dependency errors after `git pull` | `docker compose run --rm install`                                                                                 |
-| Can't sign in with the demo accounts     | Re-create them: `docker compose exec api pnpm db:seed`                                                            |
-| Start completely fresh                   | `docker compose down -v`, delete `node_modules`, then `docker compose up`                                         |
+| Problem                                        | Fix                                                                                                                                                              |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `port is already allocated`                    | Something else uses the port. Copy `.env.example` to `.env` and change `WEB_PORT` / `API_PORT` / `POSTGRES_PORT`.                                                |
+| Changes are not picked up                      | Windows: make sure the repo is inside WSL, not under `/mnt/c`. Then `docker compose restart api web`.                                                            |
+| Editor shows red squiggles everywhere          | `node_modules` is missing: `docker compose run --rm install`, then restart the TS server in your editor.                                                         |
+| Weird dependency errors after `git pull`       | `docker compose run --rm install`                                                                                                                                |
+| Can't sign in with the demo accounts           | Re-create them: `docker compose exec api pnpm db:seed`                                                                                                           |
+| Seed fails with `invalid input value for enum` | The database volume is shared by every clone of this repo and holds another checkout's migrations. `pnpm docker:clean` (deletes the database), then start again. |
+| Start completely fresh                         | `pnpm docker:clean`, delete `node_modules`, then `docker compose up`                                                                                             |
 
 ## Optional: Dev Container
 

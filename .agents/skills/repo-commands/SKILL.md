@@ -31,6 +31,7 @@ Check what is running first: `docker compose ps`.
 | Regenerate the Prisma client      | `pnpm db:generate`                                               |
 | Seed                              | `pnpm db:seed`                                                   |
 | Wipe + re-migrate + seed          | `pnpm db:reset`                                                  |
+| Delete containers + all volumes (db, pnpm store) | `pnpm docker:clean` (all clones share one `erp-workshop` volume) |
 | Prisma Studio                     | `docker compose --profile tools up -d studio` (localhost:5555)   |
 | Add a dependency                  | `pnpm add <pkg> --filter @erp/web` (run in **one** place only)   |
 
