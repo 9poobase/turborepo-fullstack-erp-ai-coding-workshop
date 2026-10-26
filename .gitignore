@@ -31,3 +31,4 @@ coverage/
 
 # AI reviewer output (lessons/08)
 .ai-review/
+package-lock.json

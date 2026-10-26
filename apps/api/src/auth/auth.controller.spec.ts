@@ -10,7 +10,20 @@ import { AuthController } from './auth.controller.js';
 import { SESSION_COOKIE, verifySessionToken } from './session-token.js';
 
 const secret = 'test-secret-that-is-at-least-32-characters';
-const admin: User = { id: 'u1', email: 'admin@erp.local', name: 'Admin User', role: 'ADMIN' };
+const admin: User = {
+  id: 'u1',
+  email: 'admin@erp.local',
+  name: 'Admin User',
+  role: 'ADMIN',
+  storeCode: null,
+};
+const storeEmployee: User = {
+  id: 'u2',
+  email: 'staff_b01@erp.local',
+  name: 'Store Employee B01',
+  role: 'STORE_EMPLOYEE',
+  storeCode: 'B01',
+};
 
 async function createController(findUnique = vi.fn()) {
   const moduleRef = await Test.createTestingModule({
@@ -89,5 +102,19 @@ describe('AuthController', () => {
 
     await expect(call(controller.me(admin), undefined)).resolves.toEqual({ user: admin });
     await expect(call(controller.me(undefined), undefined)).resolves.toEqual({ user: null });
+  });
+
+  it('resolves a store employee to their role and assigned store', async () => {
+    const controller = await createController(
+      vi.fn().mockResolvedValue({ ...storeEmployee, passwordHash }),
+    );
+    const res = fakeResponse();
+
+    await expect(
+      call(controller.login(res), { email: 'staff_b01@erp.local', password: 'password' }),
+    ).resolves.toEqual(storeEmployee);
+    await expect(call(controller.me(storeEmployee), undefined)).resolves.toEqual({
+      user: storeEmployee,
+    });
   });
 });
