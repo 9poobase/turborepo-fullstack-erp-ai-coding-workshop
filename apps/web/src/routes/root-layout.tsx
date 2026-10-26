@@ -8,7 +8,10 @@ export function RootLayout() {
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6 font-semibold">
           <nav className="flex items-center gap-4">
             <Link to="/">ERP Workshop</Link>
-            <Link to="/master-data" className="text-sm font-normal text-muted-foreground hover:text-foreground">
+            <Link
+              to="/master-data"
+              className="text-sm font-normal text-muted-foreground hover:text-foreground"
+            >
               ข้อมูลหลัก
             </Link>
           </nav>

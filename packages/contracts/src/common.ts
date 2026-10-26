@@ -38,4 +38,3 @@ export type ApiErrorData = z.infer<typeof ApiErrorDataSchema>;
 
 /** oRPC error codes the API uses with the standard Thai error payload. */
 export type ApiErrorCode = 'BAD_REQUEST' | 'CONFLICT' | 'NOT_FOUND';
-

@@ -70,7 +70,9 @@ describe('StoresController', () => {
     const controller = await createController({ findMany, count });
 
     await expect(call(controller.list(), { page: 1, pageSize: 20 })).resolves.toEqual({
-      items: [{ ...row, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() }],
+      items: [
+        { ...row, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() },
+      ],
       total: 1,
       page: 1,
       pageSize: 20,

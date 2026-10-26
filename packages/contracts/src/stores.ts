@@ -27,7 +27,12 @@ const conflict = { CONFLICT: { data: ApiErrorDataSchema } };
 
 export const storesContract = {
   list: oc
-    .route({ method: 'GET', path: '/stores', summary: 'List stores (newest first)', tags: ['Stores'] })
+    .route({
+      method: 'GET',
+      path: '/stores',
+      summary: 'List stores (newest first)',
+      tags: ['Stores'],
+    })
     .input(PaginationQuerySchema)
     .output(paginated(StoreSchema)),
   create: oc

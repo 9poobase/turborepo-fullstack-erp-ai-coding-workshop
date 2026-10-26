@@ -38,12 +38,22 @@ export const suppliersContract = {
     .input(PaginationQuerySchema)
     .output(paginated(SupplierSchema)),
   create: oc
-    .route({ method: 'POST', path: '/suppliers', summary: 'Create a supplier', tags: ['Suppliers'] })
+    .route({
+      method: 'POST',
+      path: '/suppliers',
+      summary: 'Create a supplier',
+      tags: ['Suppliers'],
+    })
     .errors(conflict)
     .input(CreateSupplierSchema)
     .output(SupplierSchema),
   update: oc
-    .route({ method: 'PUT', path: '/suppliers/{id}', summary: 'Edit a supplier', tags: ['Suppliers'] })
+    .route({
+      method: 'PUT',
+      path: '/suppliers/{id}',
+      summary: 'Edit a supplier',
+      tags: ['Suppliers'],
+    })
     .errors(conflict)
     .input(UpdateSupplierSchema)
     .output(SupplierSchema),

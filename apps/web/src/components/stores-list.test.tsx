@@ -27,7 +27,10 @@ describe('StoresList', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('shows a loading state first', () => {
-    mockApi({ 'GET /auth/me': { user: null }, 'GET /stores': { items: [], total: 0, page: 1, pageSize: 20 } });
+    mockApi({
+      'GET /auth/me': { user: null },
+      'GET /stores': { items: [], total: 0, page: 1, pageSize: 20 },
+    });
 
     renderList();
 

@@ -48,10 +48,13 @@ describe('SuppliersController', () => {
     const update = vi.fn().mockResolvedValue({ ...row, name: 'Renamed' });
     const controller = await createController({ update });
 
-    await expect(call(controller.update(), { id: 'sup1', ...input, name: 'Renamed' })).resolves.toMatchObject(
-      { name: 'Renamed' },
-    );
-    expect(update).toHaveBeenCalledWith({ where: { id: 'sup1' }, data: { ...input, name: 'Renamed' } });
+    await expect(
+      call(controller.update(), { id: 'sup1', ...input, name: 'Renamed' }),
+    ).resolves.toMatchObject({ name: 'Renamed' });
+    expect(update).toHaveBeenCalledWith({
+      where: { id: 'sup1' },
+      data: { ...input, name: 'Renamed' },
+    });
   });
 
   it('rejects a duplicate code with a Thai conflict error', async () => {

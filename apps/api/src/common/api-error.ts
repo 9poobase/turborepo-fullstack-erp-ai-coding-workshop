@@ -28,4 +28,3 @@ export function isUniqueConstraintError(error: unknown): boolean {
     (error as { code: unknown }).code === 'P2002'
   );
 }
-

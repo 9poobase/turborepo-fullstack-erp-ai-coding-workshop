@@ -61,8 +61,6 @@ describe('ApiErrorDataSchema', () => {
   });
 
   it('rejects an unknown kind', () => {
-    expect(
-      ApiErrorDataSchema.safeParse({ messageTh: 'x', kind: 'fatal' }).success,
-    ).toBe(false);
+    expect(ApiErrorDataSchema.safeParse({ messageTh: 'x', kind: 'fatal' }).success).toBe(false);
   });
 });
