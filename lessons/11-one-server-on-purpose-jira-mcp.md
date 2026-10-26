@@ -61,13 +61,44 @@ Nothing else. No Docker, no Postgres, no browser install. This lesson never runs
 
 ---
 
-## 3. Ten lines on MCP
+## 3. What MCP is
 
-The Model Context Protocol is a JSON-RPC protocol between an agent and a **server** that offers it tools, prompts and resources. Three ideas carry this lesson:
+Every tool the agents have had since lesson 3 was built in: read a file, edit it, run a shell command, start a subagent, search the web. The people who wrote the agent wrote those tools, which is why `"tools": ["@builtin"]` was a complete sentence. The **Model Context Protocol** is how a tool written by someone else gets onto the same list. Anthropic published it in November 2024 as an open standard. Kiro, Claude Code, Codex, Cursor and most other agents implement the client side; Atlassian, GitHub, the Playwright team and thousands of others publish servers. One protocol, so a server written once works in every agent, and an agent written once can use every server.
 
-- **A server is a tool list.** When the agent connects, it asks the server what tools it has and gets back a name, a description and a JSON schema for each. Those definitions go into the context window before you type anything. That is lesson 2's "count your tools": a server with 250 tools costs more than every instruction file in this repo, every session, whether or not the agent calls one.
-- **Local or remote.** A local server is a process the agent starts on your machine, like the Playwright server lesson 10 mentioned. A remote server is a URL the agent connects to over HTTP, and it authorises with OAuth in your browser, once. The token lives in the agent's credential store. Nothing goes in the repository. The Atlassian server is remote.
-- **The agent decides, the client controls.** The agent picks which tool to call. The client, Kiro, Claude Code or Codex, decides which tools the agent is shown and which calls need your yes. The lever is the agent file, the same lever lesson 3 used to say `@builtin` and nothing else.
+### Three parts
+
+![Three parts left to right. The host, kiro-cli running the planner agent, contains the model with its context window and an MCP client, one per server. The server, mcp.atlassian.com, is remote over HTTP, offers 258 tools with tools equals all, and runs as the account you authorised; behind it sits your Jira site. Four numbered arrows between client and server. One, initialize, once per session, with OAuth in the browser the first time. Two, tools slash list, and back come 258 definitions, each a name, a description and an input schema, which the host writes into the context window before your first prompt. Three, tools slash call with a name and JSON arguments, sent only after the host checks its allow-list and you say yes. Four, the result, content plus an isError flag, goes into the context like shell output. A note says steps one and two are paid once per session whether or not a tool is ever called, and steps three and four repeat per call.](images/mcp-how-it-works.svg)
+
+- **The host** is the program you type into: `kiro-cli`, `claude`, `codex`. It owns the model, the context window, the permission prompt and the agent file. Everything that decides what the model may do lives here.
+- **The client** is a connection the host opens to one server. It speaks JSON-RPC to the server, over a pipe or over HTTP. It is the host's code: the server never runs anything inside your agent, it only answers requests.
+- **The server** is a program that offers three kinds of thing. **Tools** are functions the model can call. **Resources** are data the host can read in, like a file or a record. **Prompts** are templates the host can offer you. This lesson uses tools and nothing else, and so does almost every server you will meet.
+
+### What happens in a session
+
+| Step          | Who                   | What crosses the wire                                                                                                                                                                                            | What you see                                                               |
+| ------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| **1 Connect** | client → server       | `initialize`: each side says which protocol version and features it supports. A remote server wants to know who you are first, so your browser opens on an OAuth consent page, once                              | `/mcp` shows the server connecting, then connected                         |
+| **2 List**    | client → server       | `tools/list`. Back comes one entry per tool: a `name`, a `description` written for the model, and an `inputSchema` in JSON Schema. The host writes every entry into the context window, before your first prompt | `/context show` is higher than it was; `/mcp` shows the count              |
+| **3 Call**    | model → host → server | The model writes a tool call: the name and a JSON object of arguments that fits the schema. The host checks its allow-list, shows you the arguments and asks. On yes, the client sends `tools/call`              | Kiro's prompt, with the tool name and the payload, waiting for your answer |
+| **4 Result**  | server → model        | `content`, usually text, and an `isError` flag. The host puts it into the context like the output of a shell command, and the model reads it and goes on                                                         | The agent's next sentence                                                  |
+
+Steps 1 and 2 happen once, before you type anything. Steps 3 and 4 happen per call. That split is the whole of lesson 2's "count your tools": the price of a server is paid at step 2, for every tool it offers, in every session, whether or not step 3 ever happens. A server with 250 tools costs more than every instruction file in this repository, every session, before the first prompt. Section 5 puts that number on your screen.
+
+### Local or remote
+
+A **local** server is a process the host starts on your machine and talks to over stdin and stdout. The Playwright server lesson 10 mentioned is one. It runs as you, sees your files and your environment variables, and any secret it needs goes into the config that starts it. A **remote** server is a URL the host connects to over HTTP. It runs on someone else's machine, so it can't see your files, and it authorises with OAuth in your browser: you sign in, you read what it asks for, you accept, and the token lives in the host's credential store. Nothing goes in the repository. The Atlassian server is remote, at `mcp.atlassian.com`, and from then on it acts as you, with your permissions, on your site.
+
+### Where the control is
+
+![Two rows, same start. Top row, lessons 4 to 9 on GitHub: you prompt, the agent writes a shell command as text, gh issue create with a parent flag. The PreToolUse guard reads that text and exits 0 or 2; then gh runs on the laptop and talks to GitHub. The control is a pattern on text, in the guard and in the deny list. Bottom row, this lesson on Jira: you prompt, the agent writes a tool call as JSON, createJiraIssue with projectKey ERP and type Epic. The guard box is greyed out: it never sees the call. The host checks the allow-list, thirteen of 258 tools are in the context at all, and asks you; the MCP client sends the call over HTTP to the Atlassian server, which talks to Jira. The control is which tools the model is shown, plus a yes per call. A note says the skills and the tracker doc are the same in both rows; only the lever changed.](images/mcp-shell-vs-tool-call.svg)
+
+Lessons 4 to 9 reached GitHub through `gh`, a shell command. A shell command is text, so lesson 5's guard could read it before it ran and refuse `pnpm db:reset`, and lesson 9's deny list could name `gh issue close *`. A tool call isn't text the guard sees. It is a JSON object the host hands to the client, and `scripts/agent-guard.mjs` never runs. Three controls remain, and all three live in the host or behind the server:
+
+- **What the model is shown.** The host decides which of the server's tools go into the context at step 2. In Kiro that is the `tools` list in the agent file, the same lever lesson 3 used to say `@builtin`: `@atlassian/createJiraIssue` names one tool, `@atlassian` names all 258. A tool that isn't in the context cannot be called, by mistake or otherwise. This is the control this lesson leans on.
+- **The yes before each call.** The host shows the tool name and the arguments and waits. Kiro asks by default unless the agent file says otherwise. This lesson leaves it asking, and sections 8 and 9 are mostly about reading the payload before you say yes.
+- **The account.** A remote server does what the signed-in account may do and nothing more. On your own site that is everything, which is why the first two controls matter.
+
+The model decides which tool to call. The host decides which tools exist and which calls go through. The server decides what the call does. Keep those three apart and every configuration key in section 4 and Appendix A lands in one of them.
 
 Two things MCP does **not** give you. It does not give you the guard: a tool call is not a shell command, so `scripts/agent-guard.mjs` never sees it. The equivalent is to not allow the tool. And it does not give you a diff: `gh issue create` left nothing on the machine, and neither does `createJiraIssue`, but the first one was a command you could read in the log and the second is a JSON object you can read if the client shows it. Kiro shows every tool call before it runs and asks, unless the agent file says otherwise. This lesson leaves it asking.
 
@@ -120,6 +151,8 @@ The file also fixes the project key, `ERP`, and the reference form, `ERP-12`. `/
 ## 5. Connect, authorise, measure
 
 Three sessions, each a fresh window. The first two exist only to show you a number.
+
+![Four horizontal bars on one scale, each the fixed cost of a session before the first prompt. Every bar starts with the same slate segment: system prompt, built-in tools, AGENTS.md and skill names. First bar, the erp agent with built-in tools only: the slate segment and nothing else, the baseline. Second bar, the planner with the whole Atlassian server, tools at-atlassian: a long amber segment, 258 tool definitions, taking most of the bar. Third bar, the planner with thirteen named tools: a short amber segment. Fourth bar, the planner with the server's own discover mode, no tools equals all: a sliver, four tools, discover plus three execute. A note says the lengths are relative and section 5 fills in the numbers from your own context show, and that the cost is paid at tools list, before the first prompt, whether or not a tool is ever called.](images/mcp-tool-cost.svg)
 
 **Baseline.** Start the agent you have used since lesson 3 and read its fixed cost:
 
@@ -399,6 +432,7 @@ Then `codex mcp login atlassian` in a terminal for the browser flow. The skills 
 ## Further reading
 
 - Model Context Protocol, [Specification](https://modelcontextprotocol.io/specification/latest) and [Tools](https://modelcontextprotocol.io/specification/latest/server/tools): what a server offers and how a client lists it.
+- Model Context Protocol, [Architecture overview](https://modelcontextprotocol.io/docs/learn/architecture), [Transports](https://modelcontextprotocol.io/specification/latest/basic/transports) and [Authorization](https://modelcontextprotocol.io/specification/latest/basic/authorization): host, client and server as section 3 draws them; stdio against Streamable HTTP; and the OAuth flow a remote server runs in your browser.
 - Atlassian, [Getting started with the Atlassian Rovo MCP Server](https://support.atlassian.com/atlassian-rovo-mcp-server/docs/getting-started-with-the-atlassian-remote-mcp-server/), [Supported tools](https://support.atlassian.com/atlassian-rovo-mcp-server/docs/supported-tools/), and [Authentication via API token](https://support.atlassian.com/atlassian-rovo-mcp-server/docs/configuring-authentication-via-api-token/): the endpoint, `?tools=all`, the tool names, and the admin-gated route section 11 needs.
 - Atlassian, [Rovo usage limits](https://support.atlassian.com/rovo/docs/rovo-usage-limits/): which calls cost credits. Writes and single reads don't; searches do.
 - Kiro, [Custom agent configuration reference](https://kiro.dev/docs/custom-agents/configuration-reference/) and [MCP configuration](https://kiro.dev/docs/mcp/configuration/): `mcpServers`, `@server/tool`, `includeMcpJson`, and the OAuth flow.
