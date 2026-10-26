@@ -33,3 +33,23 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
+
+model Store {
+  id        String   @id @default(cuid())
+  /// Unique store code across the organization, e.g. "B01".
+  code      String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Supplier {
+  id        String   @id @default(cuid())
+  /// Unique supplier code across the organization, e.g. "SUP01".
+  code      String   @unique
+  name      String
+  /// Free-text contact details (person, phone, email).
+  contact   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
