@@ -7,10 +7,13 @@ import * as z from 'zod';
  * `paginated(...)` envelope. API errors carry a Thai message and a recovery hint via `ApiErrorData`.
  */
 
+/** Default number of rows per page for every list. Shared by the API and the web call sites. */
+export const DEFAULT_PAGE_SIZE = 20;
+
 /** Query params every paginated list accepts. Newest-first ordering is applied by the API. */
 export const PaginationQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  pageSize: z.coerce.number().int().min(1).max(100).default(DEFAULT_PAGE_SIZE),
 });
 export type PaginationQuery = z.infer<typeof PaginationQuerySchema>;
 

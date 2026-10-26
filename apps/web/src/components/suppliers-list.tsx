@@ -1,6 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ORPCError } from '@orpc/client';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { DEFAULT_PAGE_SIZE } from '@erp/contracts';
 import { ListState } from '@/components/list-state';
 import { Pagination } from '@/components/pagination';
 import { Button } from '@/components/ui/button';
@@ -29,7 +30,9 @@ export function SuppliersList() {
   const [page, setPage] = useState(1);
   const [draft, setDraft] = useState<Draft>(emptyDraft);
 
-  const suppliers = useQuery(orpc.suppliers.list.queryOptions({ input: { page, pageSize: 20 } }));
+  const suppliers = useQuery(
+    orpc.suppliers.list.queryOptions({ input: { page, pageSize: DEFAULT_PAGE_SIZE } }),
+  );
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: orpc.suppliers.key() });
   const onSuccess = () => {

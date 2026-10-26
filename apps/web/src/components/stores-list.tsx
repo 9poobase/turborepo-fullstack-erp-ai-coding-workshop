@@ -1,6 +1,7 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ORPCError } from '@orpc/client';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { DEFAULT_PAGE_SIZE } from '@erp/contracts';
 import { ListState } from '@/components/list-state';
 import { Pagination } from '@/components/pagination';
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCurrentUser } from '@/lib/auth';
 import { orpc } from '@/lib/orpc';
-import { useQuery } from '@tanstack/react-query';
 
 type Draft = { id?: string; code: string; name: string };
 const emptyDraft: Draft = { code: '', name: '' };
@@ -30,7 +30,9 @@ export function StoresList() {
   const [page, setPage] = useState(1);
   const [draft, setDraft] = useState<Draft>(emptyDraft);
 
-  const stores = useQuery(orpc.stores.list.queryOptions({ input: { page, pageSize: 20 } }));
+  const stores = useQuery(
+    orpc.stores.list.queryOptions({ input: { page, pageSize: DEFAULT_PAGE_SIZE } }),
+  );
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: orpc.stores.key() });
   const onSuccess = () => {
