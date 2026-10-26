@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router';
+import { Link, Outlet } from 'react-router';
 import { UserMenu } from '@/components/user-menu';
 
 export function RootLayout() {
@@ -6,7 +6,12 @@ export function RootLayout() {
     <div className="min-h-svh bg-background text-foreground">
       <header className="border-b">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6 font-semibold">
-          ERP Workshop
+          <nav className="flex items-center gap-4">
+            <Link to="/">ERP Workshop</Link>
+            <Link to="/master-data" className="text-sm font-normal text-muted-foreground hover:text-foreground">
+              ข้อมูลหลัก
+            </Link>
+          </nav>
           <UserMenu />
         </div>
       </header>

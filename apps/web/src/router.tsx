@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router';
 import { RequireAuth } from '@/components/require-auth';
 import { HomePage } from '@/routes/home';
 import { LoginPage } from '@/routes/login';
+import { MasterDataPage } from '@/routes/master-data';
 import { RootLayout } from '@/routes/root-layout';
 
 export const router = createBrowserRouter([
@@ -13,7 +14,10 @@ export const router = createBrowserRouter([
       {
         path: '/',
         element: <RootLayout />,
-        children: [{ index: true, element: <HomePage /> }],
+        children: [
+          { index: true, element: <HomePage /> },
+          { path: 'master-data', element: <MasterDataPage /> },
+        ],
       },
     ],
   },
