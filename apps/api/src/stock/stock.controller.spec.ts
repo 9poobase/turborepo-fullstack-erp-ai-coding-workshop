@@ -85,9 +85,7 @@ describe('StockController', () => {
   });
 
   it('reports a null threshold and never low-stock when the store has no reorder point', async () => {
-    const findMany = vi
-      .fn()
-      .mockResolvedValue([row({ quantity: 0, product: { thresholds: [] } })]);
+    const findMany = vi.fn().mockResolvedValue([row({ quantity: 0, product: { thresholds: [] } })]);
     const count = vi.fn().mockResolvedValue(1);
     const controller = await createController({ findMany, count });
 
