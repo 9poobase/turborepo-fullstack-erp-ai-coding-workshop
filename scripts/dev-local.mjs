@@ -39,8 +39,11 @@ run('pnpm', ['db:seed']);
 // The long-running dev task. Force the stream renderer so turbo's TUI (which
 // crashes on Windows) never starts. Forward exit code / signals so Ctrl+C
 // stops it cleanly.
-console.log('\n> turbo run dev --ui=stream');
-const dev = spawn('turbo', ['run', 'dev', '--ui=stream'], {
+// Invoke turbo via `pnpm exec` so it resolves from node_modules/.bin. Spawning
+// bare `turbo` fails with exit code 127 ("command not found") when turbo is not
+// installed globally -- it is only a local devDependency here.
+console.log('\n> pnpm exec turbo run dev --ui=stream');
+const dev = spawn('pnpm', ['exec', 'turbo', 'run', 'dev', '--ui=stream'], {
   stdio: 'inherit',
   shell: true,
   env: { ...process.env, TURBO_UI: 'stream' },
