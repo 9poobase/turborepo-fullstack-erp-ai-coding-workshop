@@ -11,7 +11,6 @@ type StockBalanceRow = {
   product: {
     sku: string;
     name: string;
-    category: string;
     unit: string;
     thresholds: { storeCode: string; threshold: number }[];
   };
@@ -29,7 +28,6 @@ function toStockBalance(row: StockBalanceRow): StockBalance {
     productId: row.productId,
     sku: row.product.sku,
     productName: row.product.name,
-    category: row.product.category,
     storeCode: row.storeCode,
     quantity: row.quantity,
     unit: row.product.unit,
@@ -48,7 +46,7 @@ export class StockController {
       const { page, pageSize, q, storeCode } = input;
 
       const where: Record<string, unknown> = {};
-      if (storeCode) where.storeCode = storeCode;
+      if (storeCode) where.storeCode = { equals: storeCode, mode: 'insensitive' };
       const term = q?.trim();
       if (term) {
         where.product = {
@@ -62,7 +60,8 @@ export class StockController {
       const [rows, total] = await Promise.all([
         this.prisma.stockBalance.findMany({
           where,
-          orderBy: { createdAt: 'desc' },
+          // Newest-first, with id as a stable tiebreaker so pagination can't repeat or skip rows.
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
           skip: (page - 1) * pageSize,
           take: pageSize,
           include: { product: { include: { thresholds: true } } },

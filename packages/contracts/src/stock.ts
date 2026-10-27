@@ -11,7 +11,6 @@ export const StockBalanceSchema = z.object({
   productId: z.string(),
   sku: z.string().min(1),
   productName: z.string().min(1),
-  category: z.string().min(1),
   storeCode: z.string().min(1),
   /** Current on-hand quantity. Non-negative whole number. */
   quantity: z.number().int().min(0),

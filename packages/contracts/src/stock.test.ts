@@ -5,7 +5,6 @@ const validBalance = {
   productId: 'prd1',
   sku: 'SKU003',
   productName: 'Laundry detergent',
-  category: 'ของใช้ในบ้าน',
   storeCode: 'B01',
   quantity: 0,
   unit: 'ถุง',

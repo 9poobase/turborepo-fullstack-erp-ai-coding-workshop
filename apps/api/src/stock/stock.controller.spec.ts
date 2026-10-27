@@ -17,7 +17,6 @@ function row(overrides: Record<string, unknown> = {}) {
   const product = {
     sku: 'SKU003',
     name: 'Laundry detergent',
-    category: 'ของใช้ในบ้าน',
     unit: 'ถุง',
     thresholds: [{ storeCode: 'B01', threshold: 3 }],
     ...((overrides.product as Record<string, unknown>) ?? {}),
@@ -58,7 +57,7 @@ describe('StockController', () => {
     });
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip: 0,
         take: 20,
         include: { product: { include: { thresholds: true } } },
@@ -103,7 +102,7 @@ describe('StockController', () => {
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
-          storeCode: 'B01',
+          storeCode: { equals: 'B01', mode: 'insensitive' },
           product: {
             OR: [
               { sku: { contains: 'SKU003', mode: 'insensitive' } },
@@ -115,7 +114,7 @@ describe('StockController', () => {
     );
     expect(count).toHaveBeenCalledWith({
       where: {
-        storeCode: 'B01',
+        storeCode: { equals: 'B01', mode: 'insensitive' },
         product: {
           OR: [
             { sku: { contains: 'SKU003', mode: 'insensitive' } },
@@ -154,5 +153,15 @@ describe('StockController', () => {
 
     const result = await call(controller.search(), { page: 1, pageSize: 20 });
     expect(result.items[0]).toMatchObject({ storeCode: 'B02', threshold: 5, lowStock: true });
+  });
+
+  it('exposes no edit or delete path for the ledger at the controller seam', async () => {
+    const controller = await createController({ findMany: vi.fn(), count: vi.fn() });
+
+    // The append-only ledger is read-only from this surface: the only route is `search`.
+    const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(controller)).filter(
+      (name) => name !== 'constructor',
+    );
+    expect(methods).toEqual(['search']);
   });
 });

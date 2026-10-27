@@ -25,7 +25,6 @@ function balance(
     productId: `prd-${sku}`,
     sku,
     productName,
-    category: 'ของใช้ในบ้าน',
     storeCode,
     quantity,
     unit: 'ถุง',

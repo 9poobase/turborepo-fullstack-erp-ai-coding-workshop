@@ -103,8 +103,9 @@ enum StockMovementType {
   OPENING
 }
 
-/// The authoritative current quantity for one product at one store. Equal to the opening balance
-/// plus every successful movement; never negative. One row per (product, store).
+/// The authoritative current quantity for one product at one store. Never negative. One row per
+/// (product, store). Later stock-writing tickets keep this in step with the StockMovement ledger
+/// inside a single transaction; this ticket seeds opening quantities directly.
 model StockBalance {
   id        String  @id @default(cuid())
   productId String
@@ -126,7 +127,7 @@ model StockBalance {
 model StockMovement {
   id             String            @id @default(cuid())
   productId      String
-  product        Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product        Product           @relation(fields: [productId], references: [id], onDelete: Restrict)
   /// Store code this movement applies to, e.g. "B01".
   storeCode      String
   /// Signed change applied to the balance: positive for an increase, negative for a decrease.
