@@ -5,6 +5,7 @@ import { LoginPage } from '@/routes/login';
 import { MasterDataPage } from '@/routes/master-data';
 import { RootLayout } from '@/routes/root-layout';
 import { StockPage } from '@/routes/stock';
+import { StockReportPage } from '@/routes/stock-report';
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -19,6 +20,7 @@ export const router = createBrowserRouter([
           { index: true, element: <HomePage /> },
           { path: 'master-data', element: <MasterDataPage /> },
           { path: 'stock', element: <StockPage /> },
+          { path: 'reports/stock', element: <StockReportPage /> },
         ],
       },
     ],

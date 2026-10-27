@@ -66,7 +66,7 @@ export class StockReportsController {
       const { page, pageSize, q, storeCode } = input;
       const filter = lowStockFilter(q, storeCode);
 
-      const [ids, [{ count: total }]] = await Promise.all([
+      const [ids, counts] = await Promise.all([
         this.prisma.$queryRaw<{ id: string }[]>(
           Prisma.sql`SELECT b.id ${filter}
             ORDER BY b."createdAt" DESC, b.id DESC
@@ -76,6 +76,7 @@ export class StockReportsController {
           Prisma.sql`SELECT COUNT(*)::int AS count ${filter}`,
         ),
       ]);
+      const total = counts[0]?.count ?? 0;
       if (ids.length === 0) return { items: [], total, page, pageSize };
 
       const loaded = await this.prisma.stockBalance.findMany({

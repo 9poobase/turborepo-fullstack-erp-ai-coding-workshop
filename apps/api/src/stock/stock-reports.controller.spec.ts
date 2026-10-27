@@ -25,7 +25,11 @@ function row(
   sku: string,
   name: string,
   quantity: number,
-  options: { id?: string; storeCode?: string; thresholds?: { storeCode: string; threshold: number }[] } = {},
+  options: {
+    id?: string;
+    storeCode?: string;
+    thresholds?: { storeCode: string; threshold: number }[];
+  } = {},
 ) {
   const storeCode = options.storeCode ?? 'B01';
   return {
@@ -110,13 +114,16 @@ describe('StockReportsController.lowStock', () => {
     });
 
     expect(result).toMatchObject({ total: 41, page: 3, pageSize: 10 });
-    const [pageQuery, countQuery] = queryRaw.mock.calls.map(([sql]) => sql as { values: unknown[] });
-    expect(pageQuery.values).toEqual(expect.arrayContaining(['B01', 'SKU003', 10, 20]));
-    expect(countQuery.values).toEqual(expect.arrayContaining(['B01', 'SKU003']));
+    const boundValues = queryRaw.mock.calls.map(([sql]) => (sql as { values: unknown[] }).values);
+    expect(boundValues[0]).toEqual(expect.arrayContaining(['B01', 'SKU003', 10, 20]));
+    expect(boundValues[1]).toEqual(expect.arrayContaining(['B01', 'SKU003']));
   });
 
   it('returns an empty page without loading rows when nothing is low on stock', async () => {
-    const queryRaw = vi.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([{ count: 0 }]);
+    const queryRaw = vi
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ count: 0 }]);
     const findMany = vi.fn();
     const controller = await createController({ $queryRaw: queryRaw, stockBalance: { findMany } });
 
@@ -205,10 +212,13 @@ describe('stock report access', () => {
     return guard.canActivate(context);
   }
 
-  it.each(['onHand', 'lowStock'] as const)('lets a manager and an administrator call %s', async (route) => {
-    await expect(canCall('MANAGER', route)).resolves.toBe(true);
-    await expect(canCall('ADMIN', route)).resolves.toBe(true);
-  });
+  it.each(['onHand', 'lowStock'] as const)(
+    'lets a manager and an administrator call %s',
+    async (route) => {
+      await expect(canCall('MANAGER', route)).resolves.toBe(true);
+      await expect(canCall('ADMIN', route)).resolves.toBe(true);
+    },
+  );
 
   it.each(['onHand', 'lowStock'] as const)(
     'rejects a store employee and a purchasing officer calling %s with 403',
