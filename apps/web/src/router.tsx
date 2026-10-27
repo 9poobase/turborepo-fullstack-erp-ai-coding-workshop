@@ -4,6 +4,7 @@ import { HomePage } from '@/routes/home';
 import { LoginPage } from '@/routes/login';
 import { MasterDataPage } from '@/routes/master-data';
 import { RootLayout } from '@/routes/root-layout';
+import { StockPage } from '@/routes/stock';
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -17,6 +18,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <HomePage /> },
           { path: 'master-data', element: <MasterDataPage /> },
+          { path: 'stock', element: <StockPage /> },
         ],
       },
     ],
