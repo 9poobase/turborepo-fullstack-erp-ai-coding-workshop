@@ -99,11 +99,6 @@ describe('UpdatePurchaseOrderSchema', () => {
 
 describe('purchaseOrdersContract', () => {
   it('exposes list, get, create and update routes', () => {
-    expect(Object.keys(purchaseOrdersContract).sort()).toEqual([
-      'create',
-      'get',
-      'list',
-      'update',
-    ]);
+    expect(Object.keys(purchaseOrdersContract).sort()).toEqual(['create', 'get', 'list', 'update']);
   });
 });

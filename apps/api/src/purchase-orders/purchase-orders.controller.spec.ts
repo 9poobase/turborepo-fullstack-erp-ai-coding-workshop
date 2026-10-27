@@ -20,7 +20,13 @@ function decimal(value: number) {
 
 const supplier = { code: 'SUP01', name: 'SupplyOne Co Ltd' };
 const store = { code: 'B01', name: 'Central Store' };
-const sku001 = { id: 'prd1', sku: 'SKU001', name: 'Drinking water pack of 6', unit: 'แพ็ค', active: true };
+const sku001 = {
+  id: 'prd1',
+  sku: 'SKU001',
+  name: 'Drinking water pack of 6',
+  unit: 'แพ็ค',
+  active: true,
+};
 const sku002 = { id: 'prd2', sku: 'SKU002', name: 'Tissue paper', unit: 'แพ็ค', active: true };
 
 /** A PurchaseOrder row with its lines, as create/update/findUnique/findMany return it. */
@@ -231,7 +237,13 @@ describe('PurchaseOrdersController.update', () => {
           quantity: 30,
           unitPrice: decimal(44.5),
         },
-        { sku: 'SKU002', productName: 'Tissue paper', unit: 'แพ็ค', quantity: 4, unitPrice: decimal(10) },
+        {
+          sku: 'SKU002',
+          productName: 'Tissue paper',
+          unit: 'แพ็ค',
+          quantity: 4,
+          unitPrice: decimal(10),
+        },
       ],
     });
     const prisma = makePrisma({
