@@ -44,4 +44,26 @@ export const stockContract = {
     })
     .input(StockSearchQuerySchema)
     .output(paginated(StockBalanceSchema)),
+
+  /** Manager report: every balance matching the filters, zero-stock products included. */
+  onHand: oc
+    .route({
+      method: 'GET',
+      path: '/stock/reports/on-hand',
+      summary: 'Stock-on-hand report by store with product search (newest first)',
+      tags: ['Stock'],
+    })
+    .input(StockSearchQuerySchema)
+    .output(paginated(StockBalanceSchema)),
+
+  /** Manager report: only balances at or below their store's reorder threshold. */
+  lowStock: oc
+    .route({
+      method: 'GET',
+      path: '/stock/reports/low-stock',
+      summary: 'Low-stock report by store with product search (newest first)',
+      tags: ['Stock'],
+    })
+    .input(StockSearchQuerySchema)
+    .output(paginated(StockBalanceSchema)),
 };

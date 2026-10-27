@@ -8,6 +8,7 @@ export const accounts = {
   admin: { email: 'admin@erp.local', name: 'Admin User', role: 'ADMIN' },
   buyer: { email: 'buyer01@erp.local', name: 'Buyer 01', role: 'PURCHASING_OFFICER' },
   staff: { email: 'staff_b01@erp.local', name: 'Store Employee B01', role: 'STORE_EMPLOYEE' },
+  manager: { email: 'manager01@erp.local', name: 'Manager 01', role: 'MANAGER' },
 } as const;
 
 export type AccountName = keyof typeof accounts;
