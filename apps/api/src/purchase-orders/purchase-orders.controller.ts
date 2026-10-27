@@ -1,5 +1,5 @@
 import { Controller } from '@nestjs/common';
-import { contract, type PurchaseOrder, type User } from '@erp/contracts';
+import { contract, type CreatePurchaseOrder, type PurchaseOrder, type User } from '@erp/contracts';
 import { Implement, implement } from '@orpc/nest';
 import { CurrentUser, Roles } from '../auth/auth.decorators.js';
 import { apiError, isRecordNotFoundError } from '../common/api-error.js';
@@ -59,13 +59,6 @@ function toPurchaseOrder(row: PurchaseOrderRow): PurchaseOrder {
   };
 }
 
-type DraftInput = {
-  supplierCode: string;
-  storeCode: string;
-  expectedReceiptDate: string;
-  lines: { sku: string; quantity: number; unitPrice: number }[];
-};
-
 const notDraft = () =>
   apiError('CONFLICT', 'แก้ไขได้เฉพาะใบสั่งซื้อที่เป็นฉบับร่างเท่านั้น', 'input');
 
@@ -78,7 +71,7 @@ export class PurchaseOrdersController {
    * names and units are snapshotted so later master-data edits never rewrite the document. An
    * unknown reference is not-found; an inactive product cannot enter a new document.
    */
-  private async resolveDraft(input: DraftInput) {
+  private async resolveDraft(input: CreatePurchaseOrder) {
     const supplier = await this.prisma.supplier.findUnique({ where: { code: input.supplierCode } });
     if (!supplier) {
       throw apiError('NOT_FOUND', `ไม่พบผู้จัดจำหน่ายรหัส "${input.supplierCode}"`, 'input');
