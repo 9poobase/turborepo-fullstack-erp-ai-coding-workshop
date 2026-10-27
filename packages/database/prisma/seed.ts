@@ -25,6 +25,42 @@ const demoUsers = [
 ];
 const DEMO_PASSWORD = 'password';
 
+// Master data from the TOR Section 8.1 starting data.
+const demoStores = [
+  { code: 'B01', name: 'Central Store' },
+  { code: 'B02', name: 'Riverside Store' },
+];
+
+const demoSuppliers = [
+  { code: 'SUP01', name: 'SupplyOne Co Ltd', contact: 'ฝ่ายขาย, 02-000-0000' },
+];
+
+// Every product has a reorder threshold of 3 at B01 (Section 8.1). B02 balances are zero.
+const demoProducts = [
+  {
+    sku: 'SKU001',
+    name: 'Drinking water pack of 6',
+    category: 'เครื่องดื่ม',
+    unit: 'แพ็ค',
+    sellingPrice: 60.0,
+  },
+  {
+    sku: 'SKU002',
+    name: 'Tissue paper',
+    category: 'ของใช้ในบ้าน',
+    unit: 'แพ็ค',
+    sellingPrice: 35.0,
+  },
+  {
+    sku: 'SKU003',
+    name: 'Laundry detergent',
+    category: 'ของใช้ในบ้าน',
+    unit: 'ถุง',
+    sellingPrice: 120.0,
+  },
+];
+const DEMO_THRESHOLD = { storeCode: 'B01', threshold: 3 };
+
 async function main() {
   const passwordHash = await hashPassword(DEMO_PASSWORD);
   for (const user of demoUsers) {
@@ -35,6 +71,38 @@ async function main() {
     });
   }
   console.log(`Seeded ${demoUsers.length} demo users (password: "${DEMO_PASSWORD}").`);
+
+  for (const store of demoStores) {
+    await prisma.store.upsert({
+      where: { code: store.code },
+      update: { name: store.name },
+      create: store,
+    });
+  }
+  console.log(`Seeded ${demoStores.length} demo stores.`);
+
+  for (const supplier of demoSuppliers) {
+    await prisma.supplier.upsert({
+      where: { code: supplier.code },
+      update: { name: supplier.name, contact: supplier.contact },
+      create: supplier,
+    });
+  }
+  console.log(`Seeded ${demoSuppliers.length} demo suppliers.`);
+
+  for (const product of demoProducts) {
+    // Re-runnable: replace the product's thresholds with the single demo threshold at B01.
+    await prisma.product.upsert({
+      where: { sku: product.sku },
+      update: {
+        ...product,
+        active: true,
+        thresholds: { deleteMany: {}, create: [DEMO_THRESHOLD] },
+      },
+      create: { ...product, active: true, thresholds: { create: [DEMO_THRESHOLD] } },
+    });
+  }
+  console.log(`Seeded ${demoProducts.length} demo products.`);
 }
 
 try {

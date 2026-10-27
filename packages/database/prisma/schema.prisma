@@ -53,3 +53,35 @@ model Supplier {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model Product {
+  id   String @id @default(cuid())
+  /// Unique SKU across the organization, e.g. "SKU001". Immutable once a transaction exists.
+  sku  String @unique
+  name String
+  /// Free-text product category, e.g. "เครื่องดื่ม".
+  category String
+  /// Base unit of sale, e.g. "แพ็ค". One base unit per SKU.
+  unit     String
+  /// Selling price in Thai baht. Non-negative; two decimal places.
+  sellingPrice Decimal @db.Decimal(12, 2)
+  /// Inactive products stay searchable in history but cannot be added to new documents.
+  active   Boolean @default(true)
+  /// Per-store reorder thresholds. A store with no row has no configured threshold.
+  thresholds ProductStoreThreshold[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// The reorder threshold for one product at one store. Quantities are whole numbers.
+model ProductStoreThreshold {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /// Store code this threshold applies to, e.g. "B01".
+  storeCode String
+  /// Reorder threshold quantity. Non-negative whole number.
+  threshold Int
+
+  @@unique([productId, storeCode])
+}
