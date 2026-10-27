@@ -73,6 +73,8 @@ model Product {
   balances   StockBalance[]
   /// Append-only movement ledger entries for this product.
   movements  StockMovement[]
+  /// Purchase order lines that order this product.
+  purchaseOrderLines PurchaseOrderLine[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -145,4 +147,58 @@ model StockMovement {
   createdAt      DateTime          @default(now())
 
   @@index([productId, storeCode])
+}
+
+/// Lifecycle of a purchase order (PO-02). Drafting only ever creates DRAFT rows; the status
+/// machine that moves an order through the other states is a later ticket.
+enum PurchaseOrderStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  PARTIALLY_RECEIVED
+  COMPLETED
+  REJECTED
+  CANCELLED
+}
+
+/// An order placed with one supplier for one destination store. Supplier and store are referenced
+/// by code, with their names snapshotted so later master-data edits never rewrite the document.
+/// Creating or editing an order never touches stock.
+model PurchaseOrder {
+  id                  String              @id @default(cuid())
+  status              PurchaseOrderStatus @default(DRAFT)
+  /// Supplier code at the time the draft was saved, e.g. "SUP01".
+  supplierCode        String
+  supplierName        String
+  /// Destination store code, e.g. "B01".
+  storeCode           String
+  storeName           String
+  /// Calendar date the goods are expected. Date only: no time zone to drift.
+  expectedReceiptDate DateTime            @db.Date
+  /// The purchasing officer who created the order.
+  createdById         String
+  lines               PurchaseOrderLine[]
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@index([createdAt])
+}
+
+/// One product on a purchase order. The product's SKU, name and unit are snapshots.
+model PurchaseOrderLine {
+  id              String        @id @default(cuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product       @relation(fields: [productId], references: [id], onDelete: Restrict)
+  sku             String
+  productName     String
+  unit            String
+  /// Ordered quantity. Positive whole number.
+  quantity        Int
+  /// Purchase price per unit in Thai baht. Non-negative; two decimal places.
+  unitPrice       Decimal       @db.Decimal(12, 2)
+
+  /// A product appears at most once per order.
+  @@unique([purchaseOrderId, productId])
 }
