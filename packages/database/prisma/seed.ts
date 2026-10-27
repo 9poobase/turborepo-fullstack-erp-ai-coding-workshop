@@ -61,6 +61,14 @@ const demoProducts = [
 ];
 const DEMO_THRESHOLD = { storeCode: 'B01', threshold: 3 };
 
+// Opening per-store stock balances (TOR Section 8.1). SKU003 sits at 0 against a threshold of 3,
+// so it shows as low-stock in the B01 search — the ticket #5 Demo: line.
+const demoBalances = [
+  { sku: 'SKU001', storeCode: 'B01', quantity: 24 },
+  { sku: 'SKU002', storeCode: 'B01', quantity: 10 },
+  { sku: 'SKU003', storeCode: 'B01', quantity: 0 },
+];
+
 async function main() {
   const passwordHash = await hashPassword(DEMO_PASSWORD);
   for (const user of demoUsers) {
@@ -103,6 +111,16 @@ async function main() {
     });
   }
   console.log(`Seeded ${demoProducts.length} demo products.`);
+
+  for (const balance of demoBalances) {
+    const product = await prisma.product.findUniqueOrThrow({ where: { sku: balance.sku } });
+    await prisma.stockBalance.upsert({
+      where: { productId_storeCode: { productId: product.id, storeCode: balance.storeCode } },
+      update: { quantity: balance.quantity },
+      create: { productId: product.id, storeCode: balance.storeCode, quantity: balance.quantity },
+    });
+  }
+  console.log(`Seeded ${demoBalances.length} demo stock balances.`);
 }
 
 try {

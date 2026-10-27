@@ -69,6 +69,10 @@ model Product {
   active   Boolean @default(true)
   /// Per-store reorder thresholds. A store with no row has no configured threshold.
   thresholds ProductStoreThreshold[]
+  /// Authoritative per-store stock balances.
+  balances   StockBalance[]
+  /// Append-only movement ledger entries for this product.
+  movements  StockMovement[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -84,4 +88,61 @@ model ProductStoreThreshold {
   threshold Int
 
   @@unique([productId, storeCode])
+}
+
+/// How a stock movement came to be. The append-only ledger records one of these per entry.
+/// This release introduces the shape; later stock-writing tickets add the remaining sources.
+enum StockMovementType {
+  /// Goods receipt increased stock.
+  RECEIPT
+  /// Sale decreased stock.
+  SALE
+  /// Manager adjustment (increase or decrease) with a mandatory reason.
+  ADJUSTMENT
+  /// Opening balance recorded when a product first stocks at a store.
+  OPENING
+}
+
+/// The authoritative current quantity for one product at one store. Never negative. One row per
+/// (product, store). Later stock-writing tickets keep this in step with the StockMovement ledger
+/// inside a single transaction; this ticket seeds opening quantities directly.
+model StockBalance {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /// Store code this balance belongs to, e.g. "B01".
+  storeCode String
+  /// Current on-hand quantity. Non-negative whole number.
+  quantity  Int     @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([productId, storeCode])
+}
+
+/// Append-only movement ledger. Every stock increase or decrease writes one immutable row here
+/// recording the product, store, signed quantity change, the balance before and after, the
+/// movement type, an optional source-document reference, the actor, and when it happened.
+/// There is no edit or delete path: the ledger is the audit trail every stock-writing ticket reuses.
+model StockMovement {
+  id             String            @id @default(cuid())
+  productId      String
+  product        Product           @relation(fields: [productId], references: [id], onDelete: Restrict)
+  /// Store code this movement applies to, e.g. "B01".
+  storeCode      String
+  /// Signed change applied to the balance: positive for an increase, negative for a decrease.
+  quantityChange Int
+  /// On-hand quantity immediately before this movement.
+  balanceBefore  Int
+  /// On-hand quantity immediately after this movement (balanceBefore + quantityChange).
+  balanceAfter   Int
+  movementType   StockMovementType
+  /// Reference to the document that caused the movement, e.g. "GR-0001"; null for an opening balance.
+  sourceDocument String?
+  /// The user who caused the movement. Null only for system-seeded opening balances.
+  actorId        String?
+  /// When the movement happened. No updatedAt: rows are immutable once written.
+  createdAt      DateTime          @default(now())
+
+  @@index([productId, storeCode])
 }

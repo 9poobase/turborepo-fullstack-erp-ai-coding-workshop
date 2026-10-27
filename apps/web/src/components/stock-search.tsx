@@ -1,0 +1,116 @@
+import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { DEFAULT_PAGE_SIZE } from '@erp/contracts';
+import { ListState } from '@/components/list-state';
+import { Pagination } from '@/components/pagination';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { orpc } from '@/lib/orpc';
+
+/**
+ * Stock search: find balances by SKU, product name and store, and see the current quantity, unit,
+ * reorder threshold and a low-stock flag. Results paginate newest-first with the shared
+ * loading/empty/error states.
+ */
+export function StockSearch() {
+  const [q, setQ] = useState('');
+  const [storeCode, setStoreCode] = useState('');
+  const [page, setPage] = useState(1);
+
+  const stock = useQuery(
+    orpc.stock.search.queryOptions({
+      input: {
+        page,
+        pageSize: DEFAULT_PAGE_SIZE,
+        q: q.trim() || undefined,
+        storeCode: storeCode.trim() || undefined,
+      },
+    }),
+  );
+
+  // A new search term or store resets to the first page.
+  const onQ = (value: string) => {
+    setQ(value);
+    setPage(1);
+  };
+  const onStore = (value: string) => {
+    setStoreCode(value);
+    setPage(1);
+  };
+
+  return (
+    <section className="space-y-4">
+      <h1 className="text-2xl font-bold tracking-tight">ค้นหาสต็อก</h1>
+
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="space-y-1">
+          <Label htmlFor="stock-q">ค้นหา (SKU หรือชื่อสินค้า)</Label>
+          <Input
+            id="stock-q"
+            value={q}
+            onChange={(e) => onQ(e.target.value)}
+            placeholder="SKU001"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="stock-store">สาขา</Label>
+          <Input
+            id="stock-store"
+            value={storeCode}
+            onChange={(e) => onStore(e.target.value)}
+            placeholder="B01"
+          />
+        </div>
+      </div>
+
+      <ListState
+        isPending={stock.isPending}
+        isError={stock.isError}
+        isEmpty={stock.data?.items.length === 0}
+        emptyMessage="ไม่พบข้อมูลสต็อก"
+      >
+        <table className="w-full text-left text-sm">
+          <thead>
+            <tr className="border-b text-muted-foreground">
+              <th className="py-2">SKU</th>
+              <th className="py-2">ชื่อสินค้า</th>
+              <th className="py-2">สาขา</th>
+              <th className="py-2 text-right">คงเหลือ</th>
+              <th className="py-2">หน่วย</th>
+              <th className="py-2 text-right">จุดสั่งซื้อซ้ำ</th>
+              <th className="py-2">สถานะ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {stock.data?.items.map((item) => (
+              <tr key={`${item.productId}-${item.storeCode}`} className="border-b">
+                <td className="py-2 font-medium">{item.sku}</td>
+                <td className="py-2">{item.productName}</td>
+                <td className="py-2">{item.storeCode}</td>
+                <td className="py-2 text-right">{item.quantity}</td>
+                <td className="py-2">{item.unit}</td>
+                <td className="py-2 text-right">{item.threshold ?? '—'}</td>
+                <td className="py-2">
+                  {item.lowStock ? (
+                    <span className="text-destructive">ใกล้หมด</span>
+                  ) : (
+                    <span className="text-muted-foreground">ปกติ</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </ListState>
+
+      {stock.data && (
+        <Pagination
+          page={stock.data.page}
+          pageSize={stock.data.pageSize}
+          total={stock.data.total}
+          onPageChange={setPage}
+        />
+      )}
+    </section>
+  );
+}

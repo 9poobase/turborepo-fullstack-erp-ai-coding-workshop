@@ -14,6 +14,12 @@ export function RootLayout() {
             >
               ข้อมูลหลัก
             </Link>
+            <Link
+              to="/stock"
+              className="text-sm font-normal text-muted-foreground hover:text-foreground"
+            >
+              ค้นหาสต็อก
+            </Link>
           </nav>
           <UserMenu />
         </div>
