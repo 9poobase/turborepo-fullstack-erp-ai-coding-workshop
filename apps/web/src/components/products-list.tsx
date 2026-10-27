@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { useCurrentUser } from '@/lib/auth';
 import { orpc } from '@/lib/orpc';
 
+type ThresholdDraft = { storeCode: string; threshold: string };
 type Draft = {
   id?: string;
   sku: string;
@@ -18,8 +19,7 @@ type Draft = {
   unit: string;
   sellingPrice: string;
   active: boolean;
-  storeCode: string;
-  threshold: string;
+  thresholds: ThresholdDraft[];
 };
 
 const emptyDraft: Draft = {
@@ -29,13 +29,15 @@ const emptyDraft: Draft = {
   unit: '',
   sellingPrice: '',
   active: true,
-  storeCode: '',
-  threshold: '',
+  thresholds: [{ storeCode: '', threshold: '' }],
 };
 
-/** Fill a draft from an existing product, taking its first per-store threshold (if any). */
+/** Fill a draft from an existing product, keeping one editable row per configured store threshold. */
 function draftFrom(product: Product): Draft {
-  const first = product.thresholds[0];
+  const thresholds =
+    product.thresholds.length > 0
+      ? product.thresholds.map((t) => ({ storeCode: t.storeCode, threshold: String(t.threshold) }))
+      : [{ storeCode: '', threshold: '' }];
   return {
     id: product.id,
     sku: product.sku,
@@ -44,17 +46,15 @@ function draftFrom(product: Product): Draft {
     unit: product.unit,
     sellingPrice: String(product.sellingPrice),
     active: product.active,
-    storeCode: first?.storeCode ?? '',
-    threshold: first ? String(first.threshold) : '',
+    thresholds,
   };
 }
 
-/** Build the contract input from a draft: a single per-store threshold when both fields are set. */
+/** Build the contract input, keeping only fully filled per-store threshold rows. */
 function toInput(draft: Draft) {
-  const thresholds =
-    draft.storeCode.trim() && draft.threshold.trim()
-      ? [{ storeCode: draft.storeCode.trim(), threshold: Number(draft.threshold) }]
-      : [];
+  const thresholds = draft.thresholds
+    .filter((t) => t.storeCode.trim() && t.threshold.trim())
+    .map((t) => ({ storeCode: t.storeCode.trim(), threshold: Number(t.threshold) }));
   return {
     sku: draft.sku,
     name: draft.name,
@@ -104,6 +104,22 @@ export function ProductsList() {
     if (draft.id) update.mutate({ id: draft.id, ...input });
     else create.mutate(input);
   };
+
+  const setThreshold = (index: number, patch: Partial<ThresholdDraft>) =>
+    setDraft((prev) => ({
+      ...prev,
+      thresholds: prev.thresholds.map((t, i) => (i === index ? { ...t, ...patch } : t)),
+    }));
+  const addThreshold = () =>
+    setDraft((prev) => ({
+      ...prev,
+      thresholds: [...prev.thresholds, { storeCode: '', threshold: '' }],
+    }));
+  const removeThreshold = (index: number) =>
+    setDraft((prev) => ({
+      ...prev,
+      thresholds: prev.thresholds.filter((_, i) => i !== index),
+    }));
 
   return (
     <section className="space-y-4">
@@ -159,25 +175,57 @@ export function ProductsList() {
               required
             />
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="product-store">สาขา (จุดสั่งซื้อซ้ำ)</Label>
-            <Input
-              id="product-store"
-              value={draft.storeCode}
-              onChange={(e) => setDraft({ ...draft, storeCode: e.target.value })}
-              placeholder="B01"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="product-threshold">จุดสั่งซื้อซ้ำ</Label>
-            <Input
-              id="product-threshold"
-              type="number"
-              min="0"
-              step="1"
-              value={draft.threshold}
-              onChange={(e) => setDraft({ ...draft, threshold: e.target.value })}
-            />
+          <div className="w-full space-y-2">
+            <Label>จุดสั่งซื้อซ้ำต่อสาขา</Label>
+            {draft.thresholds.map((row, index) => (
+              <div key={index} className="flex items-end gap-3">
+                <div className="space-y-1">
+                  <Label
+                    htmlFor={`product-store-${index}`}
+                    className="text-xs text-muted-foreground"
+                  >
+                    สาขา
+                  </Label>
+                  <Input
+                    id={`product-store-${index}`}
+                    aria-label={`สาขา ${index + 1}`}
+                    value={row.storeCode}
+                    onChange={(e) => setThreshold(index, { storeCode: e.target.value })}
+                    placeholder="B01"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label
+                    htmlFor={`product-threshold-${index}`}
+                    className="text-xs text-muted-foreground"
+                  >
+                    จุดสั่งซื้อซ้ำ
+                  </Label>
+                  <Input
+                    id={`product-threshold-${index}`}
+                    aria-label={`จุดสั่งซื้อซ้ำ ${index + 1}`}
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={row.threshold}
+                    onChange={(e) => setThreshold(index, { threshold: e.target.value })}
+                  />
+                </div>
+                {draft.thresholds.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeThreshold(index)}
+                  >
+                    ลบ
+                  </Button>
+                )}
+              </div>
+            ))}
+            <Button type="button" variant="ghost" size="sm" onClick={addThreshold}>
+              + เพิ่มสาขา
+            </Button>
           </div>
           <label className="flex items-center gap-2 text-sm">
             <input
