@@ -11,10 +11,11 @@ import { orpc } from '@/lib/orpc';
 
 type ReportKind = 'on-hand' | 'low-stock';
 
-const REPORTS: { kind: ReportKind; label: string; emptyMessage: string }[] = [
-  { kind: 'on-hand', label: 'สต็อกคงเหลือ', emptyMessage: 'ไม่พบข้อมูลสต็อก' },
-  { kind: 'low-stock', label: 'สต็อกใกล้หมด', emptyMessage: 'ไม่พบสินค้าใกล้หมด' },
-];
+const REPORTS: Record<ReportKind, { label: string; emptyMessage: string }> = {
+  'on-hand': { label: 'สต็อกคงเหลือ', emptyMessage: 'ไม่พบข้อมูลสต็อก' },
+  'low-stock': { label: 'สต็อกใกล้หมด', emptyMessage: 'ไม่พบสินค้าใกล้หมด' },
+};
+const REPORT_KINDS = Object.keys(REPORTS) as ReportKind[];
 
 /**
  * Manager stock reports: stock-on-hand and low-stock, by store with a SKU/name search. Zero-stock
@@ -43,7 +44,7 @@ export function StockReport() {
     enabled: kind === 'low-stock',
   });
   const report = kind === 'on-hand' ? onHand : lowStock;
-  const { emptyMessage } = REPORTS.find((r) => r.kind === kind)!;
+  const { emptyMessage } = REPORTS[kind];
 
   // A new report, search term or store resets to the first page.
   const onKind = (value: ReportKind) => {
@@ -64,15 +65,15 @@ export function StockReport() {
       <h1 className="text-2xl font-bold tracking-tight">รายงานสต็อก</h1>
 
       <div className="flex gap-2">
-        {REPORTS.map((r) => (
+        {REPORT_KINDS.map((value) => (
           <Button
-            key={r.kind}
+            key={value}
             type="button"
-            variant={kind === r.kind ? 'default' : 'outline'}
-            aria-pressed={kind === r.kind}
-            onClick={() => onKind(r.kind)}
+            variant={kind === value ? 'default' : 'outline'}
+            aria-pressed={kind === value}
+            onClick={() => onKind(value)}
           >
-            {r.label}
+            {REPORTS[value].label}
           </Button>
         ))}
       </div>

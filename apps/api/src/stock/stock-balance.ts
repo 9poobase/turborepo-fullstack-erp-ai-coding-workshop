@@ -1,4 +1,5 @@
-import type { StockBalance } from '@erp/contracts';
+import type { StockBalance, StockSearchQuery } from '@erp/contracts';
+import type { PrismaService } from '../database/prisma.service.js';
 
 /** A Prisma StockBalance row with its product (and the product's thresholds) joined in. */
 export type StockBalanceRow = {
@@ -34,6 +35,29 @@ export function toStockBalance(row: StockBalanceRow): StockBalance {
     threshold,
     lowStock: threshold !== null && row.quantity <= threshold,
   };
+}
+
+/**
+ * One page of balances matching the optional store and term filters, newest-first, with the total
+ * across pages. `id` is a stable tiebreaker so pagination can't repeat or skip rows. Shared by the
+ * stock search and the stock-on-hand report.
+ */
+export async function findStockBalancePage(
+  prisma: PrismaService,
+  { page, pageSize, q, storeCode }: StockSearchQuery,
+) {
+  const where = stockBalanceWhere(q, storeCode);
+  const [rows, total] = await Promise.all([
+    prisma.stockBalance.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      include: STOCK_BALANCE_INCLUDE,
+    }),
+    prisma.stockBalance.count({ where }),
+  ]);
+  return { items: rows.map(toStockBalance), total, page, pageSize };
 }
 
 /**

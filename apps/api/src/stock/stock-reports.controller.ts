@@ -5,9 +5,9 @@ import { Implement, implement } from '@orpc/nest';
 import { Roles } from '../auth/auth.decorators.js';
 import { PrismaService } from '../database/prisma.service.js';
 import {
+  findStockBalancePage,
   STOCK_BALANCE_INCLUDE,
   type StockBalanceRow,
-  stockBalanceWhere,
   toStockBalance,
 } from './stock-balance.js';
 
@@ -41,23 +41,9 @@ export class StockReportsController {
 
   @Implement(contract.stock.onHand)
   onHand() {
-    return implement(contract.stock.onHand).handler(async ({ input }) => {
-      const { page, pageSize, q, storeCode } = input;
-      const where = stockBalanceWhere(q, storeCode);
-
-      const [rows, total] = await Promise.all([
-        this.prisma.stockBalance.findMany({
-          where,
-          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-          skip: (page - 1) * pageSize,
-          take: pageSize,
-          include: STOCK_BALANCE_INCLUDE,
-        }),
-        this.prisma.stockBalance.count({ where }),
-      ]);
-
-      return { items: rows.map(toStockBalance), total, page, pageSize };
-    });
+    return implement(contract.stock.onHand).handler(({ input }) =>
+      findStockBalancePage(this.prisma, input),
+    );
   }
 
   @Implement(contract.stock.lowStock)
